@@ -6,6 +6,7 @@ import 'package:dragon/features/auth/screens/register_screen.dart';
 import 'package:dragon/features/auth/screens/splash_screen.dart';
 import 'package:dragon/theme/app_theme.dart';
 import 'package:dragon/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:dragon/features/home/viewmodels/walk_viewmodel.dart';
 import 'package:dragon/shell/navigation_viewmodel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,6 +24,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
+        ChangeNotifierProvider(create: (_) => WalkViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -58,19 +60,19 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/splash',
-      builder: (_, __) => const SplashScreen(),
+      builder: (_, _) => const SplashScreen(),
     ),
     GoRoute(
       path: '/login',
-      builder: (_, __) => const LoginScreen(),
+      builder: (_, _) => const LoginScreen(),
     ),
     GoRoute(
       path: '/register',
-      builder: (_, __) => const RegisterScreen(),
+      builder: (_, _) => const RegisterScreen(),
     ),
     GoRoute(
       path: '/home',
-      builder: (_, __) => const MainShell(),
+      builder: (_, _) => const MainShell(),
     ),
   ],
 );

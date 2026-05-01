@@ -81,7 +81,7 @@ This document traces what happens from the moment a user taps the app icon to th
 18. App navigates to /home
 
 19. MainShell is shown:
-    └─ Bottom navigation bar appears with "Home" and "Food" tabs
+    └─ Bottom navigation bar appears with "Home", "Food", and "Walk" tabs
     └─ HomeTab is the active tab
     └─ User's email displayed in the welcome card
     └─ Dashboard placeholder visible

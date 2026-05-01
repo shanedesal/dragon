@@ -8,7 +8,7 @@ class FoodTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text(
-        'Empty',
+        'Food Tab Coming soon',
         style: TextStyle(
           color: CatppuccinMocha.subtext0,
           fontSize: 16,

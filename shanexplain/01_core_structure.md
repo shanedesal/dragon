@@ -31,10 +31,21 @@ lib/
 │   │   │   └── register_screen.dart ← The registration form
 │   │   └── viewmodels/
 │   │       └── auth_viewmodel.dart  ← The brain behind login/register/logout logic
-│   └── home/                        ← Everything inside the home area after logging in
+│   ├── home/                        ← Everything inside the home area after logging in
+│   │   ├── models/
+│   │   │   └── day_steps.dart       ← Data container for one day's step count (date, steps, goal)
+│   │   ├── screens/
+│   │   │   ├── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
+│   │   │   ├── food_tab.dart        ← The "Food" tab content (placeholder for now)
+│   │   │   └── walk_tab.dart        ← The "Walk" tab: step ring, goal card, and history list
+│   │   └── viewmodels/
+│   │       └── walk_viewmodel.dart  ← The brain behind step counting, permission, and Firestore sync
+│   ├── profile/                     ← The user's profile page
+│   │   └── screens/
+│   │       └── profile_screen.dart  ← Full-page profile screen (avatar + email)
+│   └── settings/                    ← App settings
 │       └── screens/
-│           ├── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
-│           └── food_tab.dart        ← The "Food" tab content (placeholder for now)
+│           └── settings_screen.dart ← Settings screen (placeholder for now)
 ├── shell/                           ← The permanent outer frame shown after login
 │   ├── main_shell.dart              ← The app bar, bottom nav bar, and drawer
 │   └── navigation_viewmodel.dart   ← Tracks which bottom tab is selected

@@ -11,9 +11,12 @@ This app is called **Dragon**. Right now it does the following:
 - Shows a **splash screen** (a loading/intro screen with an animation) when you open the app
 - Lets users **register** (create an account) with their email and password
 - Lets users **log in** with their email and password
-- Shows a **shell** after logging in — a permanent frame with an app bar, a bottom navigation bar (two tabs: Home and Food), and a slide-out profile drawer
+- Shows a **shell** after logging in — a permanent frame with an app bar, a bottom navigation bar (three tabs: Home, Food, and Walk), and a slide-out profile drawer
 - The **Home tab** shows a welcome card with the user's email and a dashboard placeholder
 - The **Food tab** is a placeholder for future content
+- The **Walk tab** is a fully working step counter: a circular progress ring, a daily goal you can edit, a "Walking/Still" status badge, and a history of your past days' steps synced to Firestore
+- Tapping the profile header in the drawer opens a **Profile Screen** showing the user's avatar and email
+- Tapping "Settings" in the drawer opens a **Settings Screen** (placeholder for now)
 - **Automatically redirects** you based on whether you're logged in or not
 
 It's a solid foundation — the "skeleton" — that you can build any real app on top of.
@@ -39,8 +42,9 @@ Think of Flutter like LEGO — it gives you pre-built blocks called **widgets** 
 Firebase is a service by Google that handles things that would otherwise require you to build your own server. In this app, you're using:
 
 - **Firebase Authentication** — handles all the login/register/logout logic. Firebase stores user emails and passwords securely in the cloud so you don't have to.
+- **Cloud Firestore** — a database in the cloud where the app saves your step history. Every day's step count and goal is stored here under your user account, so the data is safe even if you reinstall the app.
 
-You don't need to write any "save password to database" code — Firebase does it all for you.
+You don't need to write any "save password to database" or "build an API" code — Firebase does it all for you.
 
 ---
 

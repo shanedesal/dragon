@@ -63,7 +63,10 @@ It is meant to grow alongside the codebase. Every time a new screen, feature, or
 | [03_screen_splash.md](03_screen_splash.md) | Splash / intro animation screen |
 | [04_screen_login.md](04_screen_login.md) | Login form screen |
 | [05_screen_register.md](05_screen_register.md) | Registration form screen |
-| [06_screen_home.md](06_screen_home.md) | Shell + tabs after logging in (MainShell, HomeTab, FoodTab) |
+| [06_screen_home.md](06_screen_home.md) | Shell + tabs after logging in (MainShell, HomeTab, FoodTab, WalkTab) |
+| [15_screen_profile.md](15_screen_profile.md) | Profile screen (avatar + email, opened from the drawer) |
+| [16_screen_settings.md](16_screen_settings.md) | Settings screen (placeholder, opened from the drawer) |
+| [19_screen_walk_tab.md](19_screen_walk_tab.md) | Walk tab: step ring, daily goal card, walking status, and history |
 
 ### Shell — The Permanent App Frame
 | File | What it covers |
@@ -80,6 +83,12 @@ It is meant to grow alongside the codebase. Every time a new screen, feature, or
 | File | What it covers |
 |------|---------------|
 | [12_viewmodel_auth.md](12_viewmodel_auth.md) | `AuthViewModel`: all auth logic, loading state, error handling |
+| [18_viewmodel_walk.md](18_viewmodel_walk.md) | `WalkViewModel`: step counting, pedometer, goal storage, Firestore sync |
+
+### Models — Data Containers
+| File | What it covers |
+|------|---------------|
+| [17_model_day_steps.md](17_model_day_steps.md) | `DaySteps`: holds one day's date, step count, and goal |
 
 ### UI — Visual Building Blocks
 | File | What it covers |

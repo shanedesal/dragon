@@ -1,5 +1,7 @@
 import 'package:dragon/theme/app_theme.dart';
 import 'package:dragon/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:dragon/features/profile/screens/profile_screen.dart';
+import 'package:dragon/features/settings/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -20,34 +22,64 @@ class ProfileDrawer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Profile header ────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Color.fromRGBO(203, 166, 247, 0.2),
-                    child: Text(
-                      initial,
-                      style: const TextStyle(
-                        color: CatppuccinMocha.mauve,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ProfileScreen(),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Color.fromRGBO(203, 166, 247, 0.2),
+                      child: Text(
+                        initial,
+                        style: const TextStyle(
+                          color: CatppuccinMocha.mauve,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    email,
-                    style: const TextStyle(
-                      color: CatppuccinMocha.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 14),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        color: CatppuccinMocha.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      children: const [
+                        Text(
+                          'View your profile',
+                          style: TextStyle(
+                            color: CatppuccinMocha.mauve,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 11,
+                          color: CatppuccinMocha.mauve,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -72,7 +104,11 @@ class ProfileDrawer extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.of(context).pop();
-                // TODO: navigate to settings screen
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
 

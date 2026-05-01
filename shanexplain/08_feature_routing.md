@@ -35,6 +35,33 @@ GoRouter centralises all of that. The redirect logic runs automatically whenever
 | `/register` | `RegisterScreen` |
 | `/home` | `MainShell` (the outer shell with bottom nav bar, containing `HomeTab` and `FoodTab`) |
 
+> **Note:** `ProfileScreen` and `SettingsScreen` are **not** in this table. They use a different navigation method — see the section below.
+
+---
+
+## Two Types of Navigation in This App
+
+This app uses two different ways to navigate between screens. It helps to know the difference.
+
+### 1. GoRouter navigation — `context.go('/path')`
+Used for the main screens: splash, login, register, home. GoRouter is like a traffic controller — it knows the full "map" of the app, runs redirect checks (is the user logged in?), and replaces the current screen.
+
+```dart
+context.go('/home'); // Replace current screen with home
+```
+
+### 2. Push/pop navigation — `Navigator.push()` and `Navigator.pop()`
+Used for `ProfileScreen` and `SettingsScreen`. This is the classic Flutter navigation — think of it like a pile of plates. You push a new screen on top, and pop it off to go back. No redirect checks run. The `AppBar` automatically shows a back button whenever a screen has been pushed on top of something.
+
+```dart
+Navigator.of(context).push(
+  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+);
+// Later, pressing back or calling Navigator.pop() removes it
+```
+
+**Why use push/pop instead of GoRouter for these screens?** These are simple "detail" screens that don't need auth guards or URL-style paths — you always reach them from within the app, so the redirect system would be overkill. Push/pop is simpler and gets the job done.
+
 ---
 
 ## How does it work? (Step by step)
@@ -87,7 +114,8 @@ Otherwise → allow (return null).
 
 ## What to do when you change this file
 
-- [ ] When you add a new screen, add a new `GoRoute` to the routes list and a new row to the Routes table above
-- [ ] When a new screen needs auth protection, verify the existing redirect rules cover it (any non-auth route is already protected by rule 3)
+- [ ] When you add a new GoRouter screen, add a new `GoRoute` to the routes list and a new row to the Routes table above
+- [ ] When you add a new push/pop screen (like Profile or Settings), add a note to the "Two Types of Navigation" section
+- [ ] When a new GoRouter screen needs auth protection, verify the existing redirect rules cover it (any non-auth route is already protected by rule 3)
 - [ ] When you add route parameters (e.g., `/post/:id`), add a new section here explaining it
 - [ ] When you add nested routes or shell routes (e.g., a bottom navigation bar), add a section for that
