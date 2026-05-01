@@ -43,9 +43,10 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
    - `pedestrianStatusStream` — fires `"walking"` or `"stopped"` as your activity changes.
 6. **Handles the "day rollover" problem** in `_onStepCount`: the phone's pedometer counts steps since the last reboot — not since midnight. To get "today's steps," a *baseline* (the sensor reading at midnight or the first step of the day) is saved in `SharedPreferences`. `todaySteps = currentReading − baseline`. If the date has changed since the baseline was saved, the baseline resets to the current reading (starting fresh for the new day).
 7. **Guards against negative values** — if the phone reboots mid-day, the sensor resets to 0, making the subtraction go negative. In that case, `todaySteps` is set to the raw reading instead.
-8. **A timer fires every 30 seconds** and calls `_saveToFirestore()`, which writes the current step count and goal to `users/{uid}/steps/{YYYY-MM-DD}` in Firestore.
-9. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
-10. **`dispose()` cancels** both sensor subscriptions and the timer when the ViewModel is discarded, preventing memory leaks.
+8. **Logs step events in debug builds** with `_logStepEvent()` so you can see sensor updates while developing. It is throttled to avoid spam (roughly every 10 seconds or when steps jump by 100+).
+9. **A timer fires every 30 seconds** and calls `_saveToFirestore()`, which writes the current step count and goal to `users/{uid}/steps/{YYYY-MM-DD}` in Firestore.
+10. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
+11. **`dispose()` cancels** both sensor subscriptions and the timer when the ViewModel is discarded, preventing memory leaks.
 
 ---
 
@@ -62,6 +63,8 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
 | `Timer.periodic` | A repeating timer — runs a function every N seconds until cancelled |
 | `FieldValue.serverTimestamp()` | A special Firestore value that tells Firebase to fill in the server's current time when saving |
 | `FieldPath.documentId` | A Firestore way to sort/filter by the document's own ID (the `YYYY-MM-DD` key) |
+| `AppLogger` | A tiny helper that writes debug-only logs with a tag (name) |
+| `kDebugMode` | A Flutter constant that is `true` only in debug builds; used to silence logs in release |
 | `kIsWeb` | A Flutter constant that is `true` when running in a browser. Step tracking is skipped on web since there's no hardware sensor |
 | `dispose()` | A lifecycle method called when the ViewModel is thrown away. Clean up timers and streams here to avoid memory leaks |
 
@@ -76,6 +79,11 @@ Future<void> _onStepCount(StepCount event) async {
   final today = _todayString();
 
   if (_baselineDate != today) {
+    AppLogger.d(
+      'WalkSteps',
+      'Baseline reset: prevDate=$_baselineDate prevBaseline=$_baseline '
+          'newDate=$today newBaseline=${event.steps}',
+    );
     _baseline = event.steps;
     _baselineDate = today;
     await _prefs?.setInt('step_baseline', _baseline);
@@ -84,11 +92,12 @@ Future<void> _onStepCount(StepCount event) async {
 
   final computed = event.steps - _baseline;
   _todaySteps = computed < 0 ? event.steps : computed;
+  _logStepEvent(event);
   notifyListeners();
 }
 ```
 
-**What this does:** The phone's pedometer counts steps since the last reboot — not since midnight. So if your phone has counted 45,000 steps total since its last restart, but you only walked 3,200 today, this code figures that out. When the date changes (or the first time this runs), it saves the current sensor reading as the *baseline*. Every subsequent reading subtracts the baseline: `3,200 = 48,200 − 45,000`. The `computed < 0` guard handles the edge case where the phone rebooted mid-day and the sensor reset to 0.
+**What this does:** The phone's pedometer counts steps since the last reboot — not since midnight. So if your phone has counted 45,000 steps total since its last restart, but you only walked 3,200 today, this code figures that out. When the date changes (or the first time this runs), it saves the current sensor reading as the *baseline*. Every subsequent reading subtracts the baseline: `3,200 = 48,200 − 45,000`. The `computed < 0` guard handles the edge case where the phone rebooted mid-day and the sensor reset to 0. The extra `_logStepEvent` call writes a throttled debug line so you can see step updates while testing.
 
 ---
 
@@ -96,6 +105,7 @@ Future<void> _onStepCount(StepCount event) async {
 
 ```dart
 void _startSaveTimer() {
+  AppLogger.d('WalkFirestore', 'Save timer started (30s interval)');
   _saveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
     _saveToFirestore();
   });
@@ -103,22 +113,38 @@ void _startSaveTimer() {
 
 Future<void> _saveToFirestore() async {
   final user = _auth.currentUser;
-  if (user == null) return;
+  if (user == null) {
+    AppLogger.d('WalkFirestore', 'Skip save: no authenticated user');
+    return;
+  }
 
-  await _firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('steps')
-      .doc(_todayString())
-      .set({
-    'steps': _todaySteps,
-    'goal': _stepGoal,
-    'updatedAt': FieldValue.serverTimestamp(),
-  });
+  final docId = _todayString();
+  AppLogger.d(
+    'WalkFirestore',
+    'Saving steps=$_todaySteps goal=$_stepGoal '
+        'path=users/${user.uid}/steps/$docId',
+  );
+
+  try {
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('steps')
+        .doc(docId)
+        .set({
+      'steps': _todaySteps,
+      'goal': _stepGoal,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    AppLogger.d('WalkFirestore', 'Save complete');
+  } catch (e, st) {
+    AppLogger.d('WalkFirestore', 'Save failed', error: e, stackTrace: st);
+    rethrow;
+  }
 }
 ```
 
-**What this does:** Every 30 seconds, the timer fires and writes the latest step count to Firestore. The document path is `users/{your-user-id}/steps/2026-04-30` (for example). Using `.set()` means it overwrites whatever was there before — so it's always up to date, not adding duplicate records.
+**What this does:** Every 30 seconds, the timer fires and writes the latest step count to Firestore. The document path is `users/{your-user-id}/steps/2026-04-30` (for example). Using `.set()` means it overwrites whatever was there before — so it's always up to date, not adding duplicate records. The extra `AppLogger` calls are just debug breadcrumbs, and the `try/catch` logs failures if the save throws.
 
 ---
 

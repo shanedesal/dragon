@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-01] — Debug logging for Walk and routing
+
+**Code changed:** `lib/shared/utils/app_logger.dart` (new), `lib/main.dart`, `lib/features/home/viewmodels/walk_viewmodel.dart`, `lib/features/home/screens/walk_tab.dart`
+**Docs updated:** `20_core_app_logger.md` (new), `02_core_entry_point.md`, `18_viewmodel_walk.md`, `19_screen_walk_tab.md`
+**Type:** new-file
+
+A small `AppLogger` helper now centralizes debug-only logs so release builds stay quiet. Walk tracking and routing write tagged debug lines (boot, auth changes, sensor updates, and Firestore saves) to make development troubleshooting easier.
+
 ### [2026-04-30] — Walk tab: step counter, goal, and history
 
 **Code changed:** `lib/features/home/screens/walk_tab.dart` (rewritten from placeholder), `lib/features/home/viewmodels/walk_viewmodel.dart` (new), `lib/features/home/models/day_steps.dart` (new), `lib/main.dart` (WalkViewModel registered), `lib/shell/main_shell.dart` (Walk tab added to nav bar), `android/app/src/main/AndroidManifest.xml` (ACTIVITY_RECOGNITION permission), `ios/Runner/Info.plist` (NSMotionUsageDescription), `pubspec.yaml` (pedometer, cloud_firestore, shared_preferences, permission_handler added)

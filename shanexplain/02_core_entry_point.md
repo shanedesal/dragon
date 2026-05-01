@@ -10,10 +10,13 @@
 
 ```dart
 void main() async {
+  AppLogger.d('App', 'Bootstrapping');
   WidgetsFlutterBinding.ensureInitialized();
+  AppLogger.d('App', 'Firebase initialize start');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  AppLogger.d('App', 'Firebase initialize done');
   runApp(
     MultiProvider(
       providers: [
@@ -30,13 +33,14 @@ void main() async {
 **In plain English:**
 
 1. `void main()` — This is the starting function. Flutter runs this first, always.
-2. `WidgetsFlutterBinding.ensureInitialized()` — Makes sure Flutter's internal engine is ready before you do anything else. Required whenever you do something before `runApp`.
-3. `await Firebase.initializeApp(...)` — Connects the app to your Firebase project in the cloud. The `await` means "wait here until this is done before continuing."
-4. `MultiProvider(providers: [...], child: const MyApp())` — Sets up **three** shared state managers at the very top of the app. Think of it like three bulletin boards hung at the entrance of the building — every room inside can read from any of them.
+2. `AppLogger.d(...)` — Writes debug-only messages so you can see the boot process in the console. These logs do nothing in release builds.
+3. `WidgetsFlutterBinding.ensureInitialized()` — Makes sure Flutter's internal engine is ready before you do anything else. Required whenever you do something before `runApp`.
+4. `await Firebase.initializeApp(...)` — Connects the app to your Firebase project in the cloud. The `await` means "wait here until this is done before continuing."
+5. `MultiProvider(providers: [...], child: const MyApp())` — Sets up **three** shared state managers at the very top of the app. Think of it like three bulletin boards hung at the entrance of the building — every room inside can read from any of them.
    - `AuthViewModel` — manages all login/register/logout logic and the current user.
    - `NavigationViewModel` — tracks which bottom navigation tab is currently selected.
    - `WalkViewModel` — manages step counting, daily step goal, and step history. Registered here so the Walk tab can access it via `context.watch`/`context.read`.
-5. `runApp(...)` — Hands control to your `MyApp` widget, which is the root of everything the user sees.
+6. `runApp(...)` — Hands control to your `MyApp` widget, which is the root of everything the user sees.
 
 > **What is `MultiProvider`?** It's just a convenience wrapper that lets you register multiple providers at once instead of nesting them inside each other. Same result, cleaner code.
 
@@ -49,7 +53,14 @@ class _AuthNotifier extends ChangeNotifier {
   _AuthNotifier() {
     FirebaseAuth.instance
         .authStateChanges()
-        .listen((_) => notifyListeners());
+        .listen((user) {
+          AppLogger.d(
+            'Auth',
+            'Auth state changed: uid=${user?.uid ?? 'null'} '
+                'email=${user?.email ?? 'null'}',
+          );
+          notifyListeners();
+        });
   }
 }
 
@@ -62,7 +73,7 @@ This is a "watcher." Firebase can tell your app whenever a user logs in or logs 
 
 - `authStateChanges()` — A stream (like a live feed) from Firebase. Fires an event every time login state changes.
 - `notifyListeners()` — Tells anything that's watching this object: "wake up and re-check."
-- The router is set up to listen to this, so it automatically redirects the user when they log in or out.
+- The router is set up to listen to this, so it automatically redirects the user when they log in or out. The `AppLogger` line is just a debug breadcrumb so you can see auth changes in the console while developing.
 
 ---
 
@@ -77,6 +88,12 @@ final _router = GoRouter(
     final path = state.matchedLocation;
     final onSplash = path == '/splash';
     final onAuthRoute = path == '/login' || path == '/register';
+
+    AppLogger.d(
+      'Router',
+      'Redirect check: path=$path authed=$isAuthenticated '
+          'onSplash=$onSplash onAuth=$onAuthRoute',
+    );
 
     if (onSplash) return null;
     if (isAuthenticated && onAuthRoute) return '/home';
@@ -102,6 +119,8 @@ The router is like a **traffic cop** for your app. It decides which screen to sh
 4. Otherwise → let you go wherever you asked
 
 This means a logged-in user can never accidentally land on the login page, and a logged-out user can never access the home screen.
+
+The `AppLogger` line inside `redirect` is a debug-only log so you can see each routing decision during development.
 
 ---
 

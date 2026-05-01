@@ -5,6 +5,7 @@ import 'package:dragon/shell/main_shell.dart';
 import 'package:dragon/features/auth/screens/register_screen.dart';
 import 'package:dragon/features/auth/screens/splash_screen.dart';
 import 'package:dragon/theme/app_theme.dart';
+import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:dragon/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:dragon/features/home/viewmodels/walk_viewmodel.dart';
 import 'package:dragon/shell/navigation_viewmodel.dart';
@@ -15,10 +16,13 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
+  AppLogger.d('App', 'Bootstrapping');
   WidgetsFlutterBinding.ensureInitialized();
+  AppLogger.d('App', 'Firebase initialize start');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  AppLogger.d('App', 'Firebase initialize done');
   runApp(
     MultiProvider(
       providers: [
@@ -37,7 +41,14 @@ class _AuthNotifier extends ChangeNotifier {
   _AuthNotifier() {
     FirebaseAuth.instance
         .authStateChanges()
-        .listen((_) => notifyListeners());
+        .listen((user) {
+          AppLogger.d(
+            'Auth',
+            'Auth state changed: uid=${user?.uid ?? 'null'} '
+                'email=${user?.email ?? 'null'}',
+          );
+          notifyListeners();
+        });
   }
 }
 
@@ -51,6 +62,12 @@ final _router = GoRouter(
     final path = state.matchedLocation;
     final onSplash = path == '/splash';
     final onAuthRoute = path == '/login' || path == '/register';
+
+    AppLogger.d(
+      'Router',
+      'Redirect check: path=$path authed=$isAuthenticated '
+          'onSplash=$onSplash onAuth=$onAuthRoute',
+    );
 
     if (onSplash) return null;
     if (isAuthenticated && onAuthRoute) return '/home';

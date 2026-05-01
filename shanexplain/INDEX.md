@@ -56,6 +56,7 @@ It is meant to grow alongside the codebase. Every time a new screen, feature, or
 | [00_overview.md](00_overview.md) | What the app is, the big-picture flow |
 | [01_core_structure.md](01_core_structure.md) | Every folder and file in the project |
 | [02_core_entry_point.md](02_core_entry_point.md) | `main.dart` — how the app boots up |
+| [20_core_app_logger.md](20_core_app_logger.md) | `AppLogger` — debug logging helper used across the app |
 
 ### Screens — What the User Sees
 | File | What it covers |

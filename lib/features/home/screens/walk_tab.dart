@@ -1,5 +1,6 @@
 import 'package:dragon/features/home/models/day_steps.dart';
 import 'package:dragon/features/home/viewmodels/walk_viewmodel.dart';
+import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:dragon/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,7 @@ class _WalkTabState extends State<WalkTab> {
     // Kick off permission + sensor init the first time this tab is shown.
     // Uses addPostFrameCallback so context.read is safe to call.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppLogger.d('WalkUI', 'WalkTab mounted, calling initTracking');
       context.read<WalkViewModel>().initTracking();
     });
   }
@@ -38,7 +40,10 @@ class _WalkTabState extends State<WalkTab> {
     }
 
     return RefreshIndicator(
-      onRefresh: vm.refreshHistory,
+      onRefresh: () async {
+        AppLogger.d('WalkUI', 'Pull-to-refresh');
+        await vm.refreshHistory();
+      },
       color: CatppuccinMocha.mauve,
       backgroundColor: CatppuccinMocha.surface0,
       child: CustomScrollView(
@@ -374,6 +379,7 @@ class _GoalCard extends StatelessWidget {
   }
 
   Future<void> _showGoalDialog(BuildContext context) async {
+    AppLogger.d('WalkUI', 'Open goal dialog');
     final controller =
         TextEditingController(text: vm.stepGoal.toString());
 
@@ -423,7 +429,10 @@ class _GoalCard extends StatelessWidget {
     );
 
     if (result != null) {
+      AppLogger.d('WalkUI', 'Goal dialog saved: $result');
       await vm.setGoal(result);
+    } else {
+      AppLogger.d('WalkUI', 'Goal dialog canceled');
     }
   }
 }

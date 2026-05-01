@@ -31,14 +31,14 @@ Walking and step tracking is one of the app's core features. This screen makes t
 
 1. **The shell adds `WalkTab()` as the third tab** — `MainShell._tabs = [HomeTab(), FoodTab(), WalkTab()]`. When the user taps the Walk icon in the bottom nav bar, the shell swaps the body to `WalkTab`.
 2. **`WalkTab` is a `StatefulWidget`** — it needs `initState()` to kick off sensor tracking when the tab first appears.
-3. **`initState()` schedules `initTracking()`** via `WidgetsBinding.instance.addPostFrameCallback(...)`. This small trick ensures the widget is fully built before `context.read<WalkViewModel>()` is called (calling it too early would crash).
+3. **`initState()` logs a debug line and schedules `initTracking()`** via `WidgetsBinding.instance.addPostFrameCallback(...)`. This small trick ensures the widget is fully built before `context.read<WalkViewModel>()` is called (calling it too early would crash).
 4. **`WalkViewModel.initTracking()` runs** — requests permission, starts the pedometer, loads history. (See `18_viewmodel_walk.md` for the full detail.)
 5. **While initializing**, `WalkTab` shows a loading spinner (`CircularProgressIndicator`) in the centre of the screen. Once `vm.isInitialized` becomes `true`, the real content appears.
-6. **The main content is a `CustomScrollView`** with pull-to-refresh support (`RefreshIndicator`). Pulling down calls `vm.refreshHistory()` to re-fetch from Firestore.
+6. **The main content is a `CustomScrollView`** with pull-to-refresh support (`RefreshIndicator`). Pulling down logs a debug line and calls `vm.refreshHistory()` to re-fetch from Firestore.
 7. **`_StepRingCard` reads `vm.todaySteps` and `vm.stepGoal`** — calculates progress as `todaySteps / stepGoal` (clamped to 0–1 so the ring never overflows). The ring turns green when progress ≥ 1.0. The centre shows the raw number.
 8. **`_StatusBadge`** reads `vm.status` — shows a green "Walking" badge or a grey "Still" badge.
 9. **`_PermissionBanner`** is only shown if `vm.hasPermission` is `false`. Reminds the user to grant motion permission in device settings.
-10. **`_GoalCard`** shows `vm.stepGoal`. The pencil icon opens a dialog (`_showGoalDialog`) with a number text field. When saved, it calls `vm.setGoal(newValue)`.
+10. **`_GoalCard`** shows `vm.stepGoal`. The pencil icon opens a dialog (`_showGoalDialog`) with a number text field. The dialog logs open/save/cancel in debug builds, and when saved it calls `vm.setGoal(newValue)`.
 11. **`_HistorySection`** maps `vm.history` (a list of `DaySteps`) into `_HistoryItem` widgets. If the list is empty, it shows a friendly "Start walking" empty state.
 12. **`_HistoryItem`** shows one row per day: a check/unchecked icon, the formatted date, a mini linear progress bar, the step count, and the goal. The `_formatDate()` helper converts `"2026-04-30"` into `"Today"`, `"Yesterday"`, or `"Apr 30, 2026"`.
 
@@ -60,6 +60,7 @@ Walking and step tracking is one of the app's core features. This screen makes t
 | `AlertDialog` | A pop-up dialog box in the middle of the screen |
 | `FilteringTextInputFormatter.digitsOnly` | A keyboard formatter that only allows the user to type numbers |
 | `clamp(0.0, 1.0)` | Keeps a value between 0 and 1 no matter what — prevents the progress ring from overflowing past full |
+| `AppLogger` | A tiny helper that writes debug-only logs when the user interacts with the tab |
 
 ---
 
@@ -110,6 +111,7 @@ SizedBox.expand(
 ### The goal edit dialog
 
 ```dart
+AppLogger.d('WalkUI', 'Open goal dialog');
 final result = await showDialog<int>(
   context: context,
   builder: (ctx) => AlertDialog(
@@ -128,11 +130,14 @@ final result = await showDialog<int>(
 );
 
 if (result != null) {
+  AppLogger.d('WalkUI', 'Goal dialog saved: $result');
   await vm.setGoal(result);
+} else {
+  AppLogger.d('WalkUI', 'Goal dialog canceled');
 }
 ```
 
-**What this does:** `showDialog` is like a function call that returns a value — whatever the dialog "pops" with. If the user taps Save, `Navigator.of(ctx).pop(val)` closes the dialog AND passes the integer back as the return value of `showDialog`. If they tap Cancel, the dialog closes and returns `null`. The code after the `await` checks if `result` is non-null before calling `vm.setGoal()`.
+**What this does:** `showDialog` is like a function call that returns a value — whatever the dialog "pops" with. If the user taps Save, `Navigator.of(ctx).pop(val)` closes the dialog AND passes the integer back as the return value of `showDialog`. If they tap Cancel, the dialog closes and returns `null`. The code after the `await` checks if `result` is non-null before calling `vm.setGoal()`. The `AppLogger` lines are debug-only breadcrumbs so you can see when the dialog opened and what the user picked.
 
 ---
 
