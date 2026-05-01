@@ -3,18 +3,18 @@
         "platforms": {
             "android": {
                 "default": {
-                    "projectId": "dragon-7423d",
-                    "appId": "1:800758502083:android:63676b2575306dfa758876",
+                    "projectId": "dragon-c885b",
+                    "appId": "1:804147799900:android:d85aa1de9e33dfa1dd0399",
                     "fileOutput": "android/app/google-services.json"
                 }
             },
             "dart": {
                 "lib/firebase_options.dart": {
-                    "projectId": "dragon-7423d",
+                    "projectId": "dragon-c885b",
                     "configurations": {
-                        "android": "1:800758502083:android:63676b2575306dfa758876",
-                        "web": "1:800758502083:web:e960b891801a0a8c758876",
-                        "windows": "1:800758502083:web:9c4dd2debd7a10f2758876"
+                        "android": "1:804147799900:android:d85aa1de9e33dfa1dd0399",
+                        "web": "1:804147799900:web:2203d8d22cd997c4dd0399",
+                        "windows": "1:804147799900:web:ada458393cc2ac6edd0399"
                     }
                 }
             }
