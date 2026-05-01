@@ -44,6 +44,11 @@ The baseline files to always read:
 - `lib/features/profile/screens/profile_screen.dart`
 - `lib/features/settings/screens/settings_screen.dart`
 
+Also scan for existing logging patterns:
+
+- `lib/shared/utils/app_logger.dart`
+- Search for `AppLogger.d(` usage to mirror tags and message style
+
 ### Build a mental model
 
 After reading, you should be able to answer:
@@ -141,6 +146,12 @@ If the user asks you to go ahead and build it, implement the full plan:
 5. Flag anything the user should manually test or verify.
 6. Note which `shanexplain/` docs should be updated to reflect the new feature (do not update them yourself unless the user asks).
 
+Logging requirement during implementation:
+
+- Every new feature addition (UI and logic) must include `AppLogger.d(...)` calls for key lifecycle events, user actions, data fetches, and errors.
+- Follow the existing tag style (short, focused tags) and concise messages. Example tags: `Auth`, `Router`, `WalkUI`, `Walk`, `WalkFirestore`, `WalkPermission`.
+- Avoid noisy logs; log the minimum needed to understand flow and failures.
+
 ---
 
 ## Ground rules
@@ -150,3 +161,4 @@ If the user asks you to go ahead and build it, implement the full plan:
 - **Plain English for Shane.** When explaining anything, write like you're talking to someone who is smart but new to Flutter. No jargon without a one-line definition.
 - **Be honest about uncertainty.** If you're not sure how something should work, say so and ask. Don't guess and build something wrong.
 - **Respect what already exists.** Never suggest rewriting or refactoring existing code unless it directly blocks the feature.
+- **Always add logs for new code.** Use `AppLogger.d(...)` (see `lib/shared/utils/app_logger.dart` and its usage across the project) in any new UI or logic you introduce.
