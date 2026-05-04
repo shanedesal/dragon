@@ -8,6 +8,7 @@ import 'package:dragon/theme/app_theme.dart';
 import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:dragon/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:dragon/features/home/viewmodels/walk_viewmodel.dart';
+import 'package:dragon/features/food/viewmodels/food_viewmodel.dart';
 import 'package:dragon/shell/navigation_viewmodel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -29,6 +30,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
         ChangeNotifierProvider(create: (_) => WalkViewModel()),
+        ChangeNotifierProvider(create: (_) => FoodViewModel()),
       ],
       child: const MyApp(),
     ),
