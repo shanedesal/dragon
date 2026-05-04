@@ -17,13 +17,17 @@ Before doing anything else, you must **fully understand the codebase**. This is 
 
 Always do this first — regardless of whether the user provided a bug description or not. You cannot debug anything without understanding the existing app.
 
-### 1a. Read the shanexplain docs
+### 1a. Read the Project Constitution
+
+Before doing anything else, **always read `CONSTITUTION.md`** at the root of the workspace. It defines the strict architecture rules (MVVM), folder conventions, state management guidelines, and coding standards. You must adhere to these rules strictly.
+
+### 1b. Read the shanexplain docs
 
 The `shanexplain/` folder contains plain-English documentation of the app. It is kept up to date as features are added — so its contents will change over time. Do not assume a fixed list of files.
 
 Instead: **list the contents of `shanexplain/` first**, then read every `.md` file you find there. This ensures you always catch new docs for features added after this prompt was written.
 
-### 1b. Read the actual source code
+### 1c. Read the actual source code
 
 Read the real Dart files to understand the implementation at a code level. Also use `list_dir` on `lib/` to catch any new files or folders that may have been added since this prompt was written — then read those too.
 
