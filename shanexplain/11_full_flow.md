@@ -67,20 +67,23 @@ This document traces what happens from the moment a user taps the app icon to th
     └─ Loading spinner shows
 
 15. Firebase creates the account + logs the user in
-    └─ authStateChanges() fires an event
+   └─ authStateChanges() fires an event
 
-16. _AuthNotifier.notifyListeners() is called
-    └─ GoRouter re-runs its redirect function
+16. AuthViewModel tries to claim the session lock in Firestore
+   └─ If another device owns the lock, the user is signed out and shown an error
 
-17. Redirect check:
-    - Current path: /register
-    - Is user logged in? YES (just created account)
-    - Is /register an auth route? YES
-    - Rule: "logged in + on auth route → redirect to /home"
+17. _AuthNotifier.notifyListeners() is called
+   └─ GoRouter re-runs its redirect function
 
-18. App navigates to /home
+18. Redirect check:
+   - Current path: /register
+   - Is user logged in? YES (just created account)
+   - Is /register an auth route? YES
+   - Rule: "logged in + on auth route → redirect to /home"
 
-19. MainShell is shown:
+19. App navigates to /home
+
+20. MainShell is shown:
     └─ Bottom navigation bar appears with "Home", "Food", and "Walk" tabs
     └─ HomeTab is the active tab
     └─ User's email displayed in the welcome card
@@ -112,13 +115,16 @@ This document traces what happens from the moment a user taps the app icon to th
    └─ _AuthNotifier.notifyListeners()
    └─ GoRouter re-runs redirect
 
-10. Redirect check:
-    - Current path: /login
-    - Is user logged in? YES (session restored)
-    - On auth route? YES → redirect to /home
+10. AuthViewModel tries to claim the session lock in Firestore
+   └─ If another device owns the lock, the user is signed out and stays on /login
 
-11. App navigates to /home automatically (user never had to type anything)
-    └─ MainShell is shown with the HomeTab active
+11. Redirect check:
+   - Current path: /login
+   - Is user logged in? YES (session restored)
+   - On auth route? YES → redirect to /home
+
+12. App navigates to /home automatically (user never had to type anything)
+   └─ MainShell is shown with the HomeTab active
 ```
 
 > **Note:** In practice, Firebase session restoration is very fast, so the user may see the login screen flash for a split second or not at all, depending on device speed.
@@ -133,21 +139,23 @@ This document traces what happens from the moment a user taps the app icon to th
 
 2. User taps "Logout" at the bottom of the drawer
 
-3. FirebaseAuth.instance.signOut() is called via AuthViewModel
+3. AuthViewModel releases the session lock and stops the heartbeat
 
-3. Firebase deletes the session token from the device
+4. FirebaseAuth.instance.signOut() is called via AuthViewModel
+
+5. Firebase deletes the session token from the device
    └─ authStateChanges() fires
 
-4. _AuthNotifier.notifyListeners()
+6. _AuthNotifier.notifyListeners()
    └─ GoRouter re-runs redirect
 
-5. Redirect check:
+7. Redirect check:
    - Current path: /home
    - Is user logged in? NO
    - Is /home an auth route? NO
    - Rule: "not logged in + not on auth route → redirect to /login"
 
-6. App navigates to /login
+8. App navigates to /login
 ```
 
 ---

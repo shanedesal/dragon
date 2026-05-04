@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-04] — Auth session lock and walk sync tweaks
+
+**Code changed:** `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/home/viewmodels/walk_viewmodel.dart`
+**Docs updated:** `12_viewmodel_auth.md`, `07_feature_auth.md`, `18_viewmodel_walk.md`, `11_full_flow.md`, `00_overview.md`
+**Type:** update
+
+Auth now claims a Firestore session lock and refreshes it so one account stays active on one device. Walk tracking now starts from Firestore, adds only the sensor delta, and resets cleanly when the user changes or the app resumes. The docs now explain the new lock and step-sync behavior in plain English.
+
 ### [2026-05-01] — Debug logging for Walk and routing
 
 **Code changed:** `lib/shared/utils/app_logger.dart` (new), `lib/main.dart`, `lib/features/home/viewmodels/walk_viewmodel.dart`, `lib/features/home/screens/walk_tab.dart`

@@ -29,7 +29,8 @@ Building your own authentication system from scratch is hard and risky (password
 3. `AuthViewModel` calls `FirebaseAuth.instance.createUserWithEmailAndPassword(email, password)`.
 4. Firebase validates the email format, checks the password is strong enough, and checks no account with that email already exists.
 5. If everything is fine, Firebase creates the account and **automatically logs the user in**.
-6. The auth state changes → your app reacts and navigates to home.
+6. `AuthViewModel` claims a **session lock** in Firestore to make sure this account is only active on one device.
+7. The auth state changes → your app reacts and navigates to home.
 
 ### Logging in
 1. User fills in email + password and taps "Sign In."
@@ -37,12 +38,14 @@ Building your own authentication system from scratch is hard and risky (password
 3. `AuthViewModel` calls `FirebaseAuth.instance.signInWithEmailAndPassword(email, password)`.
 4. Firebase checks the credentials against its database.
 5. If correct, Firebase issues a session token (a secret key stored locally on the device).
-6. The auth state changes → your app reacts and navigates to home.
+6. The ViewModel claims a **session lock** in Firestore. If another device already owns the lock, the user is signed out and shown an error.
+7. The auth state changes → your app reacts and navigates to home.
 
 ### Staying logged in
 - Firebase stores the session token on the device. Next time the app opens, Firebase automatically restores the session — the user doesn't have to log in again.
 - `FirebaseAuth.instance.currentUser` returns the user if still logged in, or `null` if not.
 - `authStateChanges()` is a live stream that emits an event whenever login state changes (logged in, logged out).
+- The app also refreshes the **session lock** every 30 seconds. If the lock is taken by another device, the user is logged out.
 
 ### Logging out
 1. User opens the `ProfileDrawer` (by tapping the avatar button in the top-left corner) and taps "Logout."
@@ -64,6 +67,8 @@ Building your own authentication system from scratch is hard and risky (password
 | `authStateChanges()` | A stream — think of it as a notification channel. Fires every time login/logout happens |
 | `FirebaseAuthException` | The error type thrown when an auth operation fails. Has a `.code` string you can switch on |
 | Session token | A secret key Firebase stores on the device to remember the user is logged in |
+| Session lock | A small Firestore document that marks which device is active for this account |
+| Heartbeat | A repeating timer that updates the lock so it does not expire |
 | `async` / `await` | Auth calls go to the internet, so they take time. `await` pauses until the response arrives |
 
 ---

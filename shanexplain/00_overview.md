@@ -11,6 +11,7 @@ This app is called **Dragon**. Right now it does the following:
 - Shows a **splash screen** (a loading/intro screen with an animation) when you open the app
 - Lets users **register** (create an account) with their email and password
 - Lets users **log in** with their email and password
+- Keeps a **single-device session lock** so the same account is not active on two devices at once
 - Shows a **shell** after logging in — a permanent frame with an app bar, a bottom navigation bar (three tabs: Home, Food, and Walk), and a slide-out profile drawer
 - The **Home tab** shows a welcome card with the user's email and a dashboard placeholder
 - The **Food tab** is a placeholder for future content

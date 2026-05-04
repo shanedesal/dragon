@@ -35,18 +35,20 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
 ## How does it work? (Step by step)
 
 1. **`WalkTab` mounts** and calls `initTracking()` once (via `initState` + `addPostFrameCallback`).
-2. **`initTracking()` checks `_trackingStarted`** — if it's already been called (e.g. user left and came back to the tab), it returns immediately. This prevents setting up two pedometer listeners by accident.
-3. **Loads saved preferences** from `SharedPreferences` — the step goal, the baseline step count, and the date the baseline was set.
-4. **Requests permission** (Android: `ACTIVITY_RECOGNITION`; iOS: motion sensor access via `NSMotionUsageDescription`). If the user says no, `_hasPermission` stays `false` and the pedometer is never started.
-5. **Starts two sensor streams** via the `pedometer` package:
-   - `stepCountStream` — fires a new event with the total step count every time you take a step.
-   - `pedestrianStatusStream` — fires `"walking"` or `"stopped"` as your activity changes.
-6. **Handles the "day rollover" problem** in `_onStepCount`: the phone's pedometer counts steps since the last reboot — not since midnight. To get "today's steps," a *baseline* (the sensor reading at midnight or the first step of the day) is saved in `SharedPreferences`. `todaySteps = currentReading − baseline`. If the date has changed since the baseline was saved, the baseline resets to the current reading (starting fresh for the new day).
-7. **Guards against negative values** — if the phone reboots mid-day, the sensor resets to 0, making the subtraction go negative. In that case, `todaySteps` is set to the raw reading instead.
-8. **Logs step events in debug builds** with `_logStepEvent()` so you can see sensor updates while developing. It is throttled to avoid spam (roughly every 10 seconds or when steps jump by 100+).
-9. **A timer fires every 30 seconds** and calls `_saveToFirestore()`, which writes the current step count and goal to `users/{uid}/steps/{YYYY-MM-DD}` in Firestore.
-10. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
-11. **`dispose()` cancels** both sensor subscriptions and the timer when the ViewModel is discarded, preventing memory leaks.
+2. **`initTracking()` checks `_trackingStarted` and the current user**. If it's already running, or if nobody is logged in, it returns early.
+3. **Loads user-specific preferences** from `SharedPreferences` (last sensor total and last active user). If the user changed, the ViewModel marks the sensor baseline to reset.
+4. **Loads the step goal** from Firestore first, then falls back to local storage if needed.
+5. **Loads today's steps from Firestore** (the source of truth). This makes sure the screen starts from the server value, not a stale local count.
+6. **Attaches a lifecycle observer** so when the app resumes, it refreshes today's steps and the goal.
+7. **Requests permission** (Android: `ACTIVITY_RECOGNITION`; iOS: motion sensor access via `NSMotionUsageDescription`). If the user says no, `_hasPermission` stays `false` and the pedometer is never started.
+8. **Starts two sensor streams** via the `pedometer` package:
+  - `stepCountStream` — fires a new event with the total step count every time you take a step.
+  - `pedestrianStatusStream` — fires `"walking"` or `"stopped"` as your activity changes.
+9. **Handles step events by delta**. The first sensor value (or a user switch) sets a baseline. After that, the ViewModel adds only the difference between the current sensor total and the last saved sensor total.
+10. **Saves immediately after catch-up**, then every 30 seconds. Each save also updates the local history list so the UI stays fresh.
+11. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
+12. **Auth changes reset tracking**. If the signed-in user changes, the ViewModel clears state and cancels streams so the new user starts clean.
+13. **`dispose()` cancels** both sensor subscriptions, timers, and the lifecycle observer when the ViewModel is discarded, preventing memory leaks.
 
 ---
 
@@ -61,6 +63,8 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
 | `Pedometer` | A Flutter package that wraps the phone's hardware step counter |
 | `Permission.activityRecognition` | The `permission_handler` call that asks the user for motion access |
 | `Timer.periodic` | A repeating timer — runs a function every N seconds until cancelled |
+| `WidgetsBindingObserver` | Lets the ViewModel respond to app lifecycle events like "resumed" |
+| `AppLifecycleState.resumed` | The moment the app comes back to the foreground; used to refresh today's data |
 | `FieldValue.serverTimestamp()` | A special Firestore value that tells Firebase to fill in the server's current time when saving |
 | `FieldPath.documentId` | A Firestore way to sort/filter by the document's own ID (the `YYYY-MM-DD` key) |
 | `AppLogger` | A tiny helper that writes debug-only logs with a tag (name) |
@@ -72,32 +76,41 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
 
 ## Code walkthrough
 
-### The baseline logic — "how many steps have I taken TODAY?"
+### The delta logic — "how many steps did I add since last time?"
 
 ```dart
 Future<void> _onStepCount(StepCount event) async {
-  final today = _todayString();
-
-  if (_baselineDate != today) {
-    AppLogger.d(
-      'WalkSteps',
-      'Baseline reset: prevDate=$_baselineDate prevBaseline=$_baseline '
-          'newDate=$today newBaseline=${event.steps}',
-    );
-    _baseline = event.steps;
-    _baselineDate = today;
-    await _prefs?.setInt('step_baseline', _baseline);
-    await _prefs?.setString('step_baseline_date', today);
+  if (_resetLastSensorOnNextEvent || !_hasLastSensorTotal) {
+    _resetLastSensorOnNextEvent = false;
+    _lastSensorTotal = event.steps;
+    _hasLastSensorTotal = true;
+    await _persistLastSensorTotal();
+    _logStepEvent(event, 0);
+    notifyListeners();
+    return;
   }
 
-  final computed = event.steps - _baseline;
-  _todaySteps = computed < 0 ? event.steps : computed;
-  _logStepEvent(event);
+  final delta = event.steps - _lastSensorTotal;
+  if (delta < 0) {
+    _lastSensorTotal = event.steps;
+    await _persistLastSensorTotal();
+    _logStepEvent(event, 0);
+    notifyListeners();
+    return;
+  }
+
+  if (delta > 0) {
+    _todaySteps += delta;
+  }
+
+  _lastSensorTotal = event.steps;
+  await _persistLastSensorTotal();
+  _logStepEvent(event, delta);
   notifyListeners();
 }
 ```
 
-**What this does:** The phone's pedometer counts steps since the last reboot — not since midnight. So if your phone has counted 45,000 steps total since its last restart, but you only walked 3,200 today, this code figures that out. When the date changes (or the first time this runs), it saves the current sensor reading as the *baseline*. Every subsequent reading subtracts the baseline: `3,200 = 48,200 − 45,000`. The `computed < 0` guard handles the edge case where the phone rebooted mid-day and the sensor reset to 0. The extra `_logStepEvent` call writes a throttled debug line so you can see step updates while testing.
+**What this does:** The pedometer only gives a running total since the phone last rebooted. This code stores the last total and adds only the **delta** on each new event. On first run (or user switch), it saves the current sensor total as the baseline. If the sensor ever goes backward (phone reboot), it resets the baseline again.
 
 ---
 
@@ -136,10 +149,10 @@ Future<void> _saveToFirestore() async {
       'goal': _stepGoal,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    _upsertTodayHistory();
     AppLogger.d('WalkFirestore', 'Save complete');
   } catch (e, st) {
     AppLogger.d('WalkFirestore', 'Save failed', error: e, stackTrace: st);
-    rethrow;
   }
 }
 ```
@@ -153,6 +166,8 @@ Future<void> _saveToFirestore() async {
 ```dart
 Future<void> initTracking() async {
   if (_trackingStarted) return;
+  final user = _auth.currentUser;
+  if (user == null) return;
   _trackingStarted = true;
   ...
 }
