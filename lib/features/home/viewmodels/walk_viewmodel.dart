@@ -5,6 +5,7 @@ import 'package:dragon/features/home/models/day_steps.dart';
 import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,13 +13,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Manages daily step counting, Firebase sync, goal storage, and history.
 ///
 /// How it works:
-/// 1. On first use, asks for motion/activity permission.
-/// 2. Listens to the phone's hardware step counter sensor via [Pedometer].
-/// 3. Stores a "baseline" (the sensor reading at the start of each day) in
-///    SharedPreferences so we can compute "steps today = current - baseline".
-/// 4. Every 30 seconds, saves today's steps to Firestore.
-/// 5. Loads full step history from Firestore on demand.
-class WalkViewModel extends ChangeNotifier {
+/// 1. Loads today's steps from Firestore (source of truth).
+/// 2. Reads the sensor total and adds only the delta since last open.
+/// 3. Saves immediately after catch-up, then every 30 seconds.
+/// 4. Loads full step history from Firestore on demand.
+class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
+  WalkViewModel() {
+    _authSub = _auth.authStateChanges().listen(_handleAuthChange);
+  }
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -33,6 +36,7 @@ class WalkViewModel extends ChangeNotifier {
   /// 'walking', 'stopped', or 'unknown'
   String _status = 'stopped';
   String get status => _status;
+  String _lastLoadedDate = '';
 
   bool _hasPermission = false;
   bool get hasPermission => _hasPermission;
@@ -48,16 +52,22 @@ class WalkViewModel extends ChangeNotifier {
 
   // ── Internals ────────────────────────────────────────────────────────────
 
-  int _baseline = 0;
-  String _baselineDate = '';
   SharedPreferences? _prefs;
 
   StreamSubscription<StepCount>? _stepCountSub;
   StreamSubscription<PedestrianStatus>? _pedestrianStatusSub;
   Timer? _saveTimer;
+  StreamSubscription<User?>? _authSub;
+  bool _observerAttached = false;
 
   DateTime? _lastStepLogAt;
   int _lastLoggedSteps = 0;
+
+  String _activeUserId = '';
+  int _lastSensorTotal = 0;
+  bool _hasLastSensorTotal = false;
+  bool _resetLastSensorOnNextEvent = false;
+  bool _needsImmediateSave = false;
 
   /// Whether tracking has been fully started (prevents double-init when the
   /// user navigates away and back to the Walk tab).
@@ -72,18 +82,26 @@ class WalkViewModel extends ChangeNotifier {
       AppLogger.d('Walk', 'initTracking skipped (already started)');
       return;
     }
-    _trackingStarted = true;
-    AppLogger.d('Walk', 'initTracking start (isWeb=$kIsWeb)');
+    final user = _auth.currentUser;
+    if (user == null) {
+      AppLogger.d('WalkAuth', 'initTracking skipped: no user');
+      return;
+    }
 
-    _prefs = await SharedPreferences.getInstance();
-    _stepGoal = _prefs!.getInt('step_goal') ?? 10000;
-    _baseline = _prefs!.getInt('step_baseline') ?? 0;
-    _baselineDate = _prefs!.getString('step_baseline_date') ?? '';
-    AppLogger.d(
-      'Walk',
-      'Prefs loaded: goal=$_stepGoal baseline=$_baseline '
-          'baselineDate=$_baselineDate',
-    );
+    _trackingStarted = true;
+    _activeUserId = user.uid;
+    AppLogger.d('Walk', 'initTracking start (isWeb=$kIsWeb user=${user.uid})');
+
+    await _ensurePrefs();
+    await _loadUserPrefs(user.uid);
+    await _loadUserGoal();
+    await _loadTodayFromFirestore();
+    _needsImmediateSave = true;
+
+    if (!_observerAttached) {
+      WidgetsBinding.instance.addObserver(this);
+      _observerAttached = true;
+    }
 
     if (!kIsWeb) {
       await _requestPermission();
@@ -106,9 +124,13 @@ class WalkViewModel extends ChangeNotifier {
 
   /// Updates the daily step goal and persists it locally and to Firebase.
   Future<void> setGoal(int goal) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
     final previous = _stepGoal;
     _stepGoal = goal;
-    await _prefs?.setInt('step_goal', goal);
+    await _prefs?.setInt(_userKey(user.uid, 'step_goal'), goal);
+    await _saveGoalToFirestore();
     await _saveToFirestore();
     AppLogger.d('WalkGoal', 'Goal updated: $previous -> $goal');
     notifyListeners();
@@ -117,11 +139,100 @@ class WalkViewModel extends ChangeNotifier {
   /// Re-fetches history from Firestore (called on pull-to-refresh).
   Future<void> refreshHistory() async {
     AppLogger.d('WalkFirestore', 'Manual history refresh requested');
+    await _loadTodayFromFirestore();
     await _loadHistory();
     notifyListeners();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_auth.currentUser == null || !_trackingStarted) return;
+      AppLogger.d('Walk', 'App resumed, refreshing today');
+      _needsImmediateSave = true;
+      () async {
+        await _loadUserGoal();
+        await _loadTodayFromFirestore();
+        notifyListeners();
+      }();
+    }
+  }
+
   // ── Private helpers ──────────────────────────────────────────────────────
+
+  Future<void> _ensurePrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  String _userKey(String uid, String suffix) => 'walk_${uid}_$suffix';
+
+  Future<void> _loadUserPrefs(String uid) async {
+    final lastActive = _prefs?.getString('walk_last_active_user') ?? '';
+    if (lastActive != uid) {
+      _resetLastSensorOnNextEvent = true;
+      await _prefs?.setString('walk_last_active_user', uid);
+      AppLogger.d('Walk', 'User switch detected, resetting sensor baseline');
+    }
+
+    final lastTotal = _prefs?.getInt(_userKey(uid, 'last_sensor_total'));
+    if (lastTotal != null) {
+      _lastSensorTotal = lastTotal;
+      _hasLastSensorTotal = true;
+    } else {
+      _lastSensorTotal = 0;
+      _hasLastSensorTotal = false;
+    }
+  }
+
+  Future<void> _persistLastSensorTotal() async {
+    if (_activeUserId.isEmpty) return;
+    await _prefs?.setInt(
+      _userKey(_activeUserId, 'last_sensor_total'),
+      _lastSensorTotal,
+    );
+    await _prefs?.setString(
+      _userKey(_activeUserId, 'last_sensor_date'),
+      _todayString(),
+    );
+  }
+
+  Future<void> _loadUserGoal() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      final remoteGoal = (data?['stepGoal'] as num?)?.toInt();
+      if (remoteGoal != null && remoteGoal > 0) {
+        _stepGoal = remoteGoal;
+        await _prefs?.setInt(_userKey(user.uid, 'step_goal'), _stepGoal);
+        return;
+      }
+    } catch (e, st) {
+      AppLogger.d('WalkGoal', 'Goal load failed', error: e, stackTrace: st);
+    }
+
+    _stepGoal = _prefs?.getInt(_userKey(user.uid, 'step_goal')) ?? 10000;
+    await _saveGoalToFirestore();
+  }
+
+  Future<void> _saveGoalToFirestore() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore.collection('users').doc(user.uid).set(
+        {
+          'stepGoal': _stepGoal,
+          'goalUpdatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e, st) {
+      AppLogger.d('WalkGoal', 'Goal save failed', error: e, stackTrace: st);
+    }
+  }
 
   Future<void> _requestPermission() async {
     AppLogger.d('WalkPermission', 'Requesting activity recognition');
@@ -149,26 +260,62 @@ class WalkViewModel extends ChangeNotifier {
   }
 
   Future<void> _onStepCount(StepCount event) async {
-    final today = _todayString();
+    if (_activeUserId.isEmpty) return;
 
-    // If it's a new day (or the first time ever), reset the baseline so that
-    // _todaySteps counts from 0 again.
-    if (_baselineDate != today) {
+    if (_resetLastSensorOnNextEvent || !_hasLastSensorTotal) {
+      final reason = _resetLastSensorOnNextEvent ? 'user switch' : 'first run';
       AppLogger.d(
         'WalkSteps',
-        'Baseline reset: prevDate=$_baselineDate prevBaseline=$_baseline '
-            'newDate=$today newBaseline=${event.steps}',
+        'Sensor baseline set ($reason): total=${event.steps}',
       );
-      _baseline = event.steps;
-      _baselineDate = today;
-      await _prefs?.setInt('step_baseline', _baseline);
-      await _prefs?.setString('step_baseline_date', today);
+      _resetLastSensorOnNextEvent = false;
+      _lastSensorTotal = event.steps;
+      _hasLastSensorTotal = true;
+      await _persistLastSensorTotal();
+      _needsImmediateSave = false;
+      _logStepEvent(event, 0);
+      notifyListeners();
+      return;
     }
 
-    // Guard against negative values (e.g. device was rebooted mid-day).
-    final computed = event.steps - _baseline;
-    _todaySteps = computed < 0 ? event.steps : computed;
-    _logStepEvent(event);
+    final today = _todayString();
+    if (_lastLoadedDate.isNotEmpty && today != _lastLoadedDate) {
+      await _loadTodayFromFirestore();
+      _lastLoadedDate = today;
+      _lastSensorTotal = event.steps;
+      await _persistLastSensorTotal();
+    }
+
+    final delta = event.steps - _lastSensorTotal;
+    if (delta < 0) {
+      AppLogger.d(
+        'WalkSteps',
+        'Sensor total decreased, resetting baseline: '
+            'prev=$_lastSensorTotal new=${event.steps}',
+      );
+      _lastSensorTotal = event.steps;
+      await _persistLastSensorTotal();
+      _needsImmediateSave = false;
+      _logStepEvent(event, 0);
+      notifyListeners();
+      return;
+    }
+
+    if (delta > 0) {
+      _todaySteps += delta;
+    }
+
+    _lastSensorTotal = event.steps;
+    await _persistLastSensorTotal();
+    _logStepEvent(event, delta);
+
+    if (_needsImmediateSave) {
+      _needsImmediateSave = false;
+      if (delta > 0) {
+        await _saveToFirestore();
+      }
+    }
+
     notifyListeners();
   }
 
@@ -191,6 +338,7 @@ class WalkViewModel extends ChangeNotifier {
 
   void _startSaveTimer() {
     AppLogger.d('WalkFirestore', 'Save timer started (30s interval)');
+    _saveTimer?.cancel();
     _saveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _saveToFirestore();
     });
@@ -221,11 +369,36 @@ class WalkViewModel extends ChangeNotifier {
         'goal': _stepGoal,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      _upsertTodayHistory();
       AppLogger.d('WalkFirestore', 'Save complete');
     } catch (e, st) {
       AppLogger.d('WalkFirestore', 'Save failed', error: e, stackTrace: st);
-      rethrow;
     }
+  }
+
+  Future<void> _loadTodayFromFirestore() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final docId = _todayString();
+    AppLogger.d(
+      'WalkFirestore',
+      'Loading today path=users/${user.uid}/steps/$docId',
+    );
+
+    try {
+      final snap = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('steps')
+          .doc(docId)
+          .get();
+      final data = snap.data();
+      _todaySteps = (data?['steps'] as num?)?.toInt() ?? 0;
+    } catch (e, st) {
+      AppLogger.d('WalkFirestore', 'Today load failed', error: e, stackTrace: st);
+    }
+    _lastLoadedDate = _todayString();
   }
 
   Future<void> _loadHistory() async {
@@ -263,7 +436,7 @@ class WalkViewModel extends ChangeNotifier {
     }
   }
 
-  void _logStepEvent(StepCount event) {
+  void _logStepEvent(StepCount event, int delta) {
     if (!kDebugMode) return;
     final now = DateTime.now();
     final timeReady =
@@ -275,7 +448,7 @@ class WalkViewModel extends ChangeNotifier {
     _lastLoggedSteps = _todaySteps;
     AppLogger.d(
       'WalkSteps',
-      'Step event: total=${event.steps} baseline=$_baseline '
+      'Step event: total=${event.steps} delta=$delta '
           'today=$_todaySteps status=$_status',
     );
   }
@@ -287,12 +460,62 @@ class WalkViewModel extends ChangeNotifier {
         '${now.day.toString().padLeft(2, '0')}';
   }
 
+  void _handleAuthChange(User? user) {
+    final uid = user?.uid ?? '';
+    if (uid == _activeUserId) return;
+
+    AppLogger.d('WalkAuth', 'Auth changed: prev=$_activeUserId new=$uid');
+    _activeUserId = uid;
+    _trackingStarted = false;
+    _isInitialized = false;
+    _needsImmediateSave = false;
+    _resetLastSensorOnNextEvent = false;
+    _hasLastSensorTotal = false;
+    _lastSensorTotal = 0;
+    _status = 'stopped';
+    _history = [];
+    _todaySteps = 0;
+    _hasPermission = false;
+    _cancelTracking();
+    notifyListeners();
+  }
+
+  void _cancelTracking() {
+    _stepCountSub?.cancel();
+    _stepCountSub = null;
+    _pedestrianStatusSub?.cancel();
+    _pedestrianStatusSub = null;
+    _saveTimer?.cancel();
+    _saveTimer = null;
+  }
+
+  void _upsertTodayHistory() {
+    final today = _todayString();
+    final updated = DaySteps(
+      date: today,
+      steps: _todaySteps,
+      goal: _stepGoal,
+    );
+
+    final index = _history.indexWhere((day) => day.date == today);
+    if (index == -1) {
+      _history = [updated, ..._history];
+    } else {
+      final next = [..._history];
+      next[index] = updated;
+      _history = next;
+    }
+  }
+
   @override
   void dispose() {
     AppLogger.d('Walk', 'Dispose: cancelling streams and timer');
-    _stepCountSub?.cancel();
-    _pedestrianStatusSub?.cancel();
-    _saveTimer?.cancel();
+    _cancelTracking();
+    _authSub?.cancel();
+    if (_observerAttached) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observerAttached = false;
+    }
     super.dispose();
   }
 }
