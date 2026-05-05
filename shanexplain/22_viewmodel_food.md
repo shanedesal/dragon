@@ -9,7 +9,7 @@
 
 ## What is this?
 
-`FoodViewModel` is the brain behind the Food tab. It stores the current daily goals, the list of food entries for today, and the loading or error state.
+`FoodViewModel` is the brain behind the Food tab. It stores the current daily goals, the list of food entries for today, macro totals (protein, carbs, fat), and the loading or error state.
 
 The Food tab reads values from this ViewModel and never talks to Firestore directly.
 
@@ -27,11 +27,12 @@ Without a ViewModel, the Food tab would have to handle data loading and Firestor
 2. The constructor calls `fetchFoodData()` right away so the Food tab has data as soon as it appears.
 3. `fetchFoodData()` sets loading to true, clears any error, and asks `FoodRepository` for goals and entries.
 4. If the repository calls succeed, the ViewModel updates `_dailyGoals` and `_dailyEntries`.
-5. If something fails, the ViewModel sets `_errorMessage` and logs the error.
-6. `addFoodEntry(...)` builds a `FoodEntry`, sends it to the repository, then refreshes the list from Firestore.
-7. `updateDailyGoals(...)` writes new goals to Firestore and updates the local copy so the UI updates immediately.
-8. `deleteFoodEntry(...)` deletes a single entry in Firestore and removes it from the local list.
-9. Every change ends with `notifyListeners()` so the UI rebuilds with the latest data.
+5. It exposes computed totals for calories, protein, carbs, and fat by folding over the entries list.
+6. If something fails, the ViewModel sets `_errorMessage` and logs the error.
+7. `addFoodEntry(...)` builds a `FoodEntry` with quantity, unit, per-unit macros, and total macros, sends it to the repository, then refreshes the list from Firestore.
+8. `updateDailyGoals(...)` writes new goals to Firestore and updates the local copy so the UI updates immediately.
+9. `deleteFoodEntry(...)` deletes a single entry in Firestore and removes it from the local list.
+10. Every change ends with `notifyListeners()` so the UI rebuilds with the latest data.
 
 ---
 
@@ -45,7 +46,7 @@ Without a ViewModel, the Food tab would have to handle data loading and Firestor
 | Repository | A separate class that is the only place allowed to talk to Firebase |
 | `try/catch` | Error handling so failed network calls do not crash the app |
 | `AppLogger` | A small debug logger used throughout the app |
-| Computed getter | A value like `totalCalories` that is calculated from other data |
+| Computed getter | A value like `totalCalories` or `totalProtein` that is calculated from other data |
 
 ---
 
@@ -79,18 +80,42 @@ Future<void> fetchFoodData() async {
 ### Adding a new entry
 
 ```dart
-Future<void> addFoodEntry(String name, int calories, String servingSize) async {
+Future<void> addFoodEntry(
+  String name,
+  int quantity,
+  String unit,
+  int caloriesPerUnit,
+  int proteinPerUnit,
+  int carbsPerUnit,
+  int fatPerUnit,
+) async {
   _isLoading = true;
   _errorMessage = null;
   notifyListeners();
 
   try {
-    AppLogger.d('FoodViewModel', 'Adding food entry: $name ($calories kcal)');
+    final totalCalories = quantity * caloriesPerUnit;
+    final totalProtein = quantity * proteinPerUnit;
+    final totalCarbs = quantity * carbsPerUnit;
+    final totalFat = quantity * fatPerUnit;
+    AppLogger.d(
+      'FoodViewModel',
+      'Adding food entry: $name qty=$quantity unit=$unit '
+          'kcal=$totalCalories p=$totalProtein c=$totalCarbs f=$totalFat',
+    );
     final entry = FoodEntry(
       id: '',
       name: name,
-      calories: calories,
-      servingSize: servingSize,
+      quantity: quantity,
+      unit: unit,
+      caloriesPerUnit: caloriesPerUnit,
+      proteinPerUnit: proteinPerUnit,
+      carbsPerUnit: carbsPerUnit,
+      fatPerUnit: fatPerUnit,
+      totalCalories: totalCalories,
+      totalProtein: totalProtein,
+      totalCarbs: totalCarbs,
+      totalFat: totalFat,
       timestamp: DateTime.now(),
     );
 

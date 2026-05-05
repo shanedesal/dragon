@@ -5,6 +5,7 @@
 // ------------------------------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../shared/utils/app_logger.dart';
 import '../../../../theme/app_theme.dart';
 import '../../viewmodels/food_viewmodel.dart';
 
@@ -12,6 +13,7 @@ class SetGoalsModal extends StatefulWidget {
   const SetGoalsModal({super.key});
 
   static void show(BuildContext context) {
+    AppLogger.d('FoodGoals', 'Open SetGoalsModal');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -57,6 +59,7 @@ class _SetGoalsModalState extends State<SetGoalsModal> {
       final calories = int.parse(_caloriesController.text.trim());
       final protein = int.parse(_proteinController.text.trim());
 
+      AppLogger.d('FoodGoals', 'Save goals: $calories kcal / $protein g protein');
       context.read<FoodViewModel>().updateDailyGoals(calories, protein);
       Navigator.of(context).pop();
     }

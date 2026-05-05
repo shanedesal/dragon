@@ -22,7 +22,7 @@ class FoodRepository {
       throw Exception('User not logged in');
     }
 
-    AppLogger.d('FoodRepository', 'Writing food entry to Firestore: "${entry.name}" (${entry.calories} kcal) for uid=$_uid');
+    AppLogger.d('FoodRepository', 'Writing food entry to Firestore: "${entry.name}" (${entry.caloriesPerUnit} kcal) for uid=$_uid');
     try {
       await _firestore
           .collection('users')

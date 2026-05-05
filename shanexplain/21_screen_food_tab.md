@@ -9,7 +9,7 @@
 
 ## What is this?
 
-The Food tab is a daily food diary. It lets the user see how many calories they have logged today, what foods they added, and it gives quick buttons to add an entry or change goals.
+The Food tab is a daily food diary with macro tracking (protein, carbs, fat). It shows calorie and protein progress, a macro summary, and a list of meals with their totals.
 
 The screen reads everything from `FoodViewModel`, so it never talks to Firestore directly.
 
@@ -26,12 +26,13 @@ Food tracking is a core part of a fitness app. This screen gives the user one si
 1. The shell shows `FoodTab()` as the second tab in the bottom bar.
 2. `FoodTab` watches `FoodViewModel` with `context.watch`, so it rebuilds when food data changes.
 3. If the ViewModel is loading and there are no entries yet, the tab shows a centered spinner.
-4. The main body is a `CustomScrollView` wrapped in a `RefreshIndicator`. Pulling down calls `vm.fetchFoodData()` to reload goals and entries.
+4. The main body is a `CustomScrollView` wrapped in a `RefreshIndicator`. Pulling down logs a debug line and calls `vm.fetchFoodData()` to reload goals and entries.
 5. If `vm.errorMessage` is not null, an `ErrorBannerWidget` appears at the top.
-6. The progress card reads `vm.dailyGoals` and `vm.totalCalories`, then shows "Eaten", "Remaining", and a progress bar.
-7. The entries section either shows an empty message or a list of cards, one per `FoodEntry`. Each card has a delete button that calls `vm.deleteFoodEntry(entry.id)`.
-8. Tapping the pencil icon opens `SetGoalsModal`. The modal pre-fills the current goals and calls `vm.updateDailyGoals(...)` when you save.
-9. Tapping the floating plus button opens `AddFoodModal`. The modal validates the form and calls `vm.addFoodEntry(...)`, then closes.
+6. The summary card shows calories and protein progress, plus how much is left for each goal. The pencil icon opens `SetGoalsModal` to edit goals.
+7. The macro card shows totals for protein, carbs, and fat for the day.
+8. The entries section either shows an empty state with a "Log your first meal" button or a list of cards, one per `FoodEntry`.
+9. Each entry card shows the name, serving info, macro totals, calories, and time. The delete button calls `vm.deleteFoodEntry(entry.id)`.
+10. Tapping the floating plus button opens `AddFoodModal`. The modal collects quantity, unit, and per-unit macros, shows a live total, then calls `vm.addFoodEntry(...)` on submit.
 
 ---
 
@@ -44,9 +45,11 @@ Food tracking is a core part of a fitness app. This screen gives the user one si
 | `context.read<T>()` | Read a ViewModel one time for an action |
 | `RefreshIndicator` | Pull down to refresh a scroll view |
 | `CustomScrollView` + `SliverList` | A flexible scroll view that can mix headers and lists |
+| `AlwaysScrollableScrollPhysics` | Keeps pull-to-refresh working even when the list is short |
 | `FloatingActionButton` | The round "plus" button in the bottom corner |
 | `showModalBottomSheet` | A panel that slides up from the bottom of the screen |
 | `TextFormField` + validators | A text field with built-in form validation |
+| `DropdownButtonFormField` | A drop-down picker used here for units like g or ml |
 | `LinearProgressIndicator` | A horizontal progress bar |
 | `ErrorBannerWidget` | A reusable red error box used across the app |
 
@@ -68,23 +71,50 @@ child: vm.isLoading && vm.dailyEntries.isEmpty
 
 **What this does:** If the ViewModel is still loading and there are no entries yet, the screen shows a spinner instead of empty UI. Once data is ready, the `RefreshIndicator` wraps the scroll view so a pull-down gesture reloads the food data.
 
-### The progress math
+### The summary progress
 
 ```dart
-final caloriesLeft = vm.dailyGoals.targetCalories - vm.totalCalories;
-final progress = vm.totalCalories /
-    (vm.dailyGoals.targetCalories > 0 ? vm.dailyGoals.targetCalories : 1);
+final calorieProgress =
+    calorieGoal > 0 ? vm.totalCalories / calorieGoal : 0.0;
+final proteinProgress =
+    proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
 
-LinearProgressIndicator(
-  value: progress.clamp(0.0, 1.0),
-  backgroundColor: CatppuccinMocha.surface1,
-  color: progress >= 1.0 ? CatppuccinMocha.red : CatppuccinMocha.green,
-  minHeight: 8,
-  borderRadius: BorderRadius.circular(4),
+_ProgressRow(
+  label: 'Calories',
+  current: vm.totalCalories,
+  goal: calorieGoal,
+  progress: calorieProgress,
+  color: calorieProgress >= 1.0
+      ? CatppuccinMocha.red
+      : CatppuccinMocha.mauve,
+  unit: 'kcal',
+),
+_ProgressRow(
+  label: 'Protein',
+  current: vm.totalProtein,
+  goal: proteinGoal,
+  progress: proteinProgress,
+  color: CatppuccinMocha.blue,
+  unit: 'g',
 ),
 ```
 
-**What this does:** The card computes how much of the calorie goal is used and turns it into a 0 to 1 progress value. The bar clamps the value so it never overflows past 100%. If you go over the goal, the bar turns red.
+**What this does:** The summary card now tracks both calories and protein. Each `_ProgressRow` clamps its progress so the bar never overflows. Calories switch to red when you go over the goal.
+
+### The live totals preview
+
+```dart
+final totalCalories = quantity * caloriesPerUnit;
+final totalProtein = quantity * proteinPerUnit;
+final totalCarbs = quantity * carbsPerUnit;
+final totalFat = quantity * fatPerUnit;
+
+Text(
+  '$totalCalories kcal • P $totalProtein g • C $totalCarbs g • F $totalFat g',
+)
+```
+
+**What this does:** As the user types, the modal multiplies the per-unit values by the quantity and shows the totals live. That makes it easier to log real meals without doing math in your head.
 
 ---
 

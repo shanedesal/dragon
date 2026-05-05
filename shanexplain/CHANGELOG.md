@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-05] — Food macros and entry detail upgrade
+
+**Code changed:** `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/home/screens/food_tab.dart`
+**Docs updated:** `00_overview.md`, `06_screen_home.md`, `21_screen_food_tab.md`, `22_viewmodel_food.md`, `23_model_food_data.md`, `24_feature_food.md`
+**Type:** update
+
+Food logging now tracks quantity, units, and full macros (protein, carbs, fat) with live totals in the add modal. The Food tab UI was expanded to show macro summaries and richer entry cards, so the docs now describe the more advanced flow.
+
 ### [2026-05-04] — Food tab docs and header rule sync
 
 **Code changed:** `CONSTITUTION.md`, `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/food/models/daily_goals.dart`, `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/home/screens/food_tab.dart`, `lib/main.dart`

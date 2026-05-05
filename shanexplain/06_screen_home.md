@@ -19,7 +19,7 @@ After logging in, the user lands on a **shell** — a permanent outer frame that
 
 The content area in the middle swaps between tabs depending on which one the user tapped. Right now:
 - **Home tab** (`HomeTab`) — shows the welcome card with the user's email, a "Dashboard" heading, and a "You're all set!" placeholder.
-- **Food tab** (`FoodTab`) — shows daily calorie progress, a list of entries, and buttons to add food or edit goals.
+- **Food tab** (`FoodTab`) — shows calorie + protein progress, macro totals, and a list of entries with per-meal macros.
 - **Walk tab** (`WalkTab`) — a fully working step counter with a circular progress ring, walking/still status badge, daily goal card, and a history list synced to Firestore.
 
 Before this change, there was a single `HomeScreen` with a logout icon crammed into the top-right corner. The shell approach makes it easy to keep adding tabs and features without rewriting everything.
@@ -48,7 +48,7 @@ Most apps have a persistent frame — the bottom bar, the top bar, the drawer �
 4. **User taps a bottom tab** → calls `NavigationViewModel.setIndex(i)` → ViewModel updates → `MainShell` rebuilds → `body` shows the new tab.
 5. **User taps the avatar button in the app bar** → `Scaffold.of(context).openDrawer()` → the `ProfileDrawer` slides in from the left.
 6. **`HomeTab` renders** — it reads the logged-in user's email from `AuthViewModel` and shows the welcome card, dashboard heading, and the `_EmptyState` placeholder widget.
-7. **`FoodTab` renders** — shows the progress card, entry list, and the add/edit actions. See `21_screen_food_tab.md` for details.
+7. **`FoodTab` renders** — shows the summary card, macro totals, and the entry list with add/edit actions. See `21_screen_food_tab.md` for details.
 8. **`WalkTab` renders** — shows the step ring, goal card, and history. Kicks off sensor tracking on first mount. See `19_screen_walk_tab.md` for the full detail.
 
 ---

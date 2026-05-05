@@ -24,7 +24,14 @@ class FoodViewModel extends ChangeNotifier {
   DailyGoals _dailyGoals = DailyGoals(targetCalories: 2000, targetProtein: 100);
   DailyGoals get dailyGoals => _dailyGoals;
 
-  int get totalCalories => _dailyEntries.fold(0, (sum, entry) => sum + entry.calories);
+    int get totalCalories =>
+      _dailyEntries.fold(0, (sum, entry) => sum + entry.totalCalories);
+    int get totalProtein =>
+      _dailyEntries.fold(0, (sum, entry) => sum + entry.totalProtein);
+    int get totalCarbs =>
+      _dailyEntries.fold(0, (sum, entry) => sum + entry.totalCarbs);
+    int get totalFat =>
+      _dailyEntries.fold(0, (sum, entry) => sum + entry.totalFat);
 
   FoodViewModel() {
     fetchFoodData();
@@ -49,18 +56,42 @@ class FoodViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> addFoodEntry(String name, int calories, String servingSize) async {
+  Future<void> addFoodEntry(
+    String name,
+    int quantity,
+    String unit,
+    int caloriesPerUnit,
+    int proteinPerUnit,
+    int carbsPerUnit,
+    int fatPerUnit,
+  ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      AppLogger.d('FoodViewModel', 'Adding food entry: $name ($calories kcal)');
+      final totalCalories = quantity * caloriesPerUnit;
+      final totalProtein = quantity * proteinPerUnit;
+      final totalCarbs = quantity * carbsPerUnit;
+      final totalFat = quantity * fatPerUnit;
+      AppLogger.d(
+        'FoodViewModel',
+        'Adding food entry: $name qty=$quantity unit=$unit '
+            'kcal=$totalCalories p=$totalProtein c=$totalCarbs f=$totalFat',
+      );
       final entry = FoodEntry(
         id: '', // Firestore generates this
         name: name,
-        calories: calories,
-        servingSize: servingSize,
+        quantity: quantity,
+        unit: unit,
+        caloriesPerUnit: caloriesPerUnit,
+        proteinPerUnit: proteinPerUnit,
+        carbsPerUnit: carbsPerUnit,
+        fatPerUnit: fatPerUnit,
+        totalCalories: totalCalories,
+        totalProtein: totalProtein,
+        totalCarbs: totalCarbs,
+        totalFat: totalFat,
         timestamp: DateTime.now(),
       );
       

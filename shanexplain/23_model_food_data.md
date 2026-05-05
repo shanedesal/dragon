@@ -11,7 +11,7 @@
 
 These two classes are simple data containers for the Food feature:
 
-- `FoodEntry` represents one food item the user logged.
+- `FoodEntry` represents one food item the user logged, including quantity, unit, per-unit macros, and totals.
 - `DailyGoals` represents the user's daily calorie and protein targets.
 
 They are small, predictable shapes that make it easy to move data between Firestore and the UI.
@@ -27,10 +27,11 @@ Raw Firestore data is just a map of key and value pairs. Using small model class
 ## How does it work? (Step by step)
 
 1. When Firestore returns a document, `fromJson` converts it into a Dart object.
-2. `FoodEntry.fromJson` reads name, calories, serving size, and timestamp. If any value is missing, it falls back to a safe default.
-3. `FoodEntry.toJson` turns the object back into a map so Firestore can save it.
-4. `DailyGoals.fromJson` reads `targetCalories` and `targetProtein`, with default values if the doc is missing.
-5. `DailyGoals.toJson` writes those goals back to Firestore.
+2. `FoodEntry.fromJson` reads quantity, unit, and totals. If older fields like `servingSize` or `calories` exist, it still accepts them for backward compatibility.
+3. If per-unit values are missing, it calculates them from totals and quantity.
+4. `FoodEntry.toJson` turns the object back into a map so Firestore can save it.
+5. `DailyGoals.fromJson` reads `targetCalories` and `targetProtein`, with default values if the doc is missing.
+6. `DailyGoals.toJson` writes those goals back to Firestore.
 
 ---
 
@@ -42,6 +43,7 @@ Raw Firestore data is just a map of key and value pairs. Using small model class
 | `factory` | A helper constructor that builds an object from data |
 | `Map<String, dynamic>` | A flexible key/value map used to represent JSON data |
 | `Timestamp` | Firestore's date type (it needs converting to `DateTime`) |
+| Backward compatibility | Supporting older saved data so it still loads correctly |
 
 ---
 
@@ -51,11 +53,31 @@ Raw Firestore data is just a map of key and value pairs. Using small model class
 
 ```dart
 factory FoodEntry.fromJson(Map<String, dynamic> json, String id) {
+  final legacyServing = json['servingSize'] as String?;
+  var quantity = json['quantity'] as int? ?? 1;
+  var unit = json['unit'] as String? ?? 'serving';
+  if (json['quantity'] == null && legacyServing != null && legacyServing.isNotEmpty) {
+    unit = legacyServing;
+  }
+  final totalCalories = json['totalCalories'] as int?
+      ?? json['calories'] as int?
+      ?? 0;
+  final caloriesPerUnit = json['caloriesPerUnit'] as int?
+      ?? (quantity > 0 ? (totalCalories / quantity).round() : 0);
+
   return FoodEntry(
     id: id,
     name: json['name'] as String? ?? '',
-    calories: json['calories'] as int? ?? 0,
-    servingSize: json['servingSize'] as String? ?? '',
+    quantity: quantity,
+    unit: unit,
+    caloriesPerUnit: caloriesPerUnit,
+    proteinPerUnit: json['proteinPerUnit'] as int? ?? 0,
+    carbsPerUnit: json['carbsPerUnit'] as int? ?? 0,
+    fatPerUnit: json['fatPerUnit'] as int? ?? 0,
+    totalCalories: totalCalories,
+    totalProtein: json['totalProtein'] as int? ?? 0,
+    totalCarbs: json['totalCarbs'] as int? ?? 0,
+    totalFat: json['totalFat'] as int? ?? 0,
     timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
   );
 }
@@ -63,14 +85,22 @@ factory FoodEntry.fromJson(Map<String, dynamic> json, String id) {
 Map<String, dynamic> toJson() {
   return {
     'name': name,
-    'calories': calories,
-    'servingSize': servingSize,
+    'quantity': quantity,
+    'unit': unit,
+    'caloriesPerUnit': caloriesPerUnit,
+    'proteinPerUnit': proteinPerUnit,
+    'carbsPerUnit': carbsPerUnit,
+    'fatPerUnit': fatPerUnit,
+    'totalCalories': totalCalories,
+    'totalProtein': totalProtein,
+    'totalCarbs': totalCarbs,
+    'totalFat': totalFat,
     'timestamp': Timestamp.fromDate(timestamp),
   };
 }
 ```
 
-**What this does:** `fromJson` builds a `FoodEntry` from Firestore data. `toJson` does the reverse so the entry can be saved again. The timestamp is converted both ways because Firestore uses `Timestamp` while the app uses `DateTime`.
+**What this does:** `fromJson` supports both the new macro fields and older legacy fields like `servingSize` and `calories`. It also computes per-unit values if they are missing. `toJson` writes the full macro and total set back to Firestore.
 
 ### `DailyGoals` defaults
 

@@ -24,7 +24,7 @@ Keeping Firebase calls in a single repository keeps the rest of the app clean. S
 ## How does it work? (Step by step)
 
 1. The repository checks the current user ID from `FirebaseAuth`. If there is no user, it throws an error.
-2. `addFoodEntry` writes a new document to `users/{uid}/food_entries` using `FoodEntry.toJson()`.
+2. `addFoodEntry` writes a new document to `users/{uid}/food_entries` using `FoodEntry.toJson()` (including quantity, unit, and macro totals).
 3. `getDailyFoodEntries` queries only the current day by filtering the `timestamp` field between the start and end of today. Results are sorted newest first.
 4. `getDailyGoals` reads `users/{uid}/goals/daily_food`. If the doc is missing, it returns defaults from `DailyGoals`.
 5. `setDailyGoals` writes back to the same goals document using `SetOptions(merge: true)` so it does not wipe other fields.
