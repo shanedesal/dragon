@@ -1,6 +1,6 @@
 import 'package:dragon/features/home/screens/food_tab.dart';
 import 'package:dragon/features/home/screens/home_tab.dart';
-import 'package:dragon/features/home/screens/walk_tab.dart';
+import 'package:dragon/features/walk/screens/walk_tab.dart';
 import 'package:dragon/theme/app_theme.dart';
 import 'package:dragon/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:dragon/shell/navigation_viewmodel.dart';

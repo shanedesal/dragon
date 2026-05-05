@@ -1,7 +1,14 @@
+// ------------------------------------------------------------------
+// File: walk_viewmodel.dart
+// Feature: Walk
+// Description: ViewModel managing step tracking, goal persistence, and history.
+// ------------------------------------------------------------------
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dragon/features/home/models/day_steps.dart';
+import 'package:dragon/features/walk/models/day_steps.dart';
+import 'package:dragon/features/walk/models/step_goal.dart';
 import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -30,8 +37,8 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   int _todaySteps = 0;
   int get todaySteps => _todaySteps;
 
-  int _stepGoal = 10000;
-  int get stepGoal => _stepGoal;
+  StepGoal _goal = const StepGoal(targetSteps: 10000);
+  int get stepGoal => _goal.targetSteps;
 
   /// 'walking', 'stopped', or 'unknown'
   String _status = 'stopped';
@@ -127,8 +134,8 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final previous = _stepGoal;
-    _stepGoal = goal;
+    final previous = _goal.targetSteps;
+    _goal = StepGoal(targetSteps: goal);
     await _prefs?.setInt(_userKey(user.uid, 'step_goal'), goal);
     await _saveGoalToFirestore();
     await _saveToFirestore();
@@ -205,15 +212,17 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       final data = doc.data();
       final remoteGoal = (data?['stepGoal'] as num?)?.toInt();
       if (remoteGoal != null && remoteGoal > 0) {
-        _stepGoal = remoteGoal;
-        await _prefs?.setInt(_userKey(user.uid, 'step_goal'), _stepGoal);
+        _goal = StepGoal(targetSteps: remoteGoal);
+        await _prefs?.setInt(_userKey(user.uid, 'step_goal'), _goal.targetSteps);
         return;
       }
     } catch (e, st) {
       AppLogger.d('WalkGoal', 'Goal load failed', error: e, stackTrace: st);
     }
 
-    _stepGoal = _prefs?.getInt(_userKey(user.uid, 'step_goal')) ?? 10000;
+    _goal = StepGoal(
+      targetSteps: _prefs?.getInt(_userKey(user.uid, 'step_goal')) ?? 10000,
+    );
     await _saveGoalToFirestore();
   }
 
@@ -224,7 +233,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     try {
       await _firestore.collection('users').doc(user.uid).set(
         {
-          'stepGoal': _stepGoal,
+          ..._goal.toJson(),
           'goalUpdatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -354,7 +363,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     final docId = _todayString();
     AppLogger.d(
       'WalkFirestore',
-      'Saving steps=$_todaySteps goal=$_stepGoal '
+      'Saving steps=$_todaySteps goal=${_goal.targetSteps} '
           'path=users/${user.uid}/steps/$docId',
     );
 
@@ -366,7 +375,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
           .doc(docId)
           .set({
         'steps': _todaySteps,
-        'goal': _stepGoal,
+        'goal': _goal.targetSteps,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       _upsertTodayHistory();
@@ -427,7 +436,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
         return DaySteps(
           date: doc.id,
           steps: (data['steps'] as num?)?.toInt() ?? 0,
-          goal: (data['goal'] as num?)?.toInt() ?? _stepGoal,
+          goal: (data['goal'] as num?)?.toInt() ?? _goal.targetSteps,
         );
       }).toList();
       AppLogger.d('WalkFirestore', 'History loaded: count=${_history.length}');
@@ -494,7 +503,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     final updated = DaySteps(
       date: today,
       steps: _todaySteps,
-      goal: _stepGoal,
+      goal: _goal.targetSteps,
     );
 
     final index = _history.indexWhere((day) => day.date == today);

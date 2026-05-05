@@ -1,12 +1,18 @@
-import 'package:dragon/features/home/models/day_steps.dart';
-import 'package:dragon/features/home/viewmodels/walk_viewmodel.dart';
+// ------------------------------------------------------------------
+// File: walk_tab.dart
+// Feature: Walk
+// Description: Walk tab UI for step tracking, goal editing, and history.
+// ------------------------------------------------------------------
+
+import 'package:dragon/features/walk/models/day_steps.dart';
+import 'package:dragon/features/walk/viewmodels/walk_viewmodel.dart';
 import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:dragon/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-// ── WalkTab ──────────────────────────────────────────────────────────────────
+// ── WalkTab ─────────────────────────────────────────────────────────────────-
 
 class WalkTab extends StatefulWidget {
   const WalkTab({super.key});
@@ -71,7 +77,7 @@ class _WalkTabState extends State<WalkTab> {
   }
 }
 
-// ── Web unavailable banner ────────────────────────────────────────────────────
+// ── Web unavailable banner ───────────────────────────────────────────────────-
 
 class _WebUnavailableBanner extends StatelessWidget {
   const _WebUnavailableBanner();
@@ -118,7 +124,7 @@ class _WebUnavailableBanner extends StatelessWidget {
   }
 }
 
-// ── Step ring card ────────────────────────────────────────────────────────────
+// ── Step ring card ─────────────────────────────────────────────────────────---
 
 class _StepRingCard extends StatelessWidget {
   final WalkViewModel vm;
@@ -196,7 +202,7 @@ class _StepRingCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // ── Percentage label ──────────────────────────────────────────
+          // ── Percentage label ─────────────────────────────────────────-
           Text(
             goalReached
                 ? 'Goal reached! 🎉'
@@ -210,10 +216,10 @@ class _StepRingCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // ── Walking status badge ──────────────────────────────────────
+          // ── Walking status badge ─────────────────────────────────────-
           _StatusBadge(isWalking: isWalking),
 
-          // ── Permission warning ────────────────────────────────────────
+          // ── Permission warning ───────────────────────────────────────-
           if (!vm.hasPermission) ...[
             const SizedBox(height: 14),
             _PermissionBanner(),
@@ -224,7 +230,7 @@ class _StepRingCard extends StatelessWidget {
   }
 }
 
-// ── Status badge ─────────────────────────────────────────────────────────────
+// ── Status badge ─────────────────────────────────────────────────────────----
 
 class _StatusBadge extends StatelessWidget {
   final bool isWalking;
@@ -273,7 +279,7 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ── Permission banner ─────────────────────────────────────────────────────────
+// ── Permission banner ─────────────────────────────────────────────────--------
 
 class _PermissionBanner extends StatelessWidget {
   const _PermissionBanner();
@@ -310,7 +316,7 @@ class _PermissionBanner extends StatelessWidget {
   }
 }
 
-// ── Goal card ─────────────────────────────────────────────────────────────────
+// ── Goal card ─────────────────────────────────────────────────----------------
 
 class _GoalCard extends StatelessWidget {
   final WalkViewModel vm;
@@ -437,7 +443,7 @@ class _GoalCard extends StatelessWidget {
   }
 }
 
-// ── History section ───────────────────────────────────────────────────────────
+// ── History section ─────────────────────────────────────────────────---------
 
 class _HistorySection extends StatelessWidget {
   final WalkViewModel vm;
@@ -513,7 +519,7 @@ class _HistorySection extends StatelessWidget {
   }
 }
 
-// ── History item ──────────────────────────────────────────────────────────────
+// ── History item ─────────────────────────────────────────────────-----------
 
 class _HistoryItem extends StatelessWidget {
   final DaySteps day;
