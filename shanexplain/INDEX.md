@@ -68,6 +68,7 @@ It is meant to grow alongside the codebase. Every time a new screen, feature, or
 | [15_screen_profile.md](15_screen_profile.md) | Profile screen (avatar + email, opened from the drawer) |
 | [16_screen_settings.md](16_screen_settings.md) | Settings screen (placeholder, opened from the drawer) |
 | [19_screen_walk_tab.md](19_screen_walk_tab.md) | Walk tab: step ring, daily goal card, walking status, and history |
+| [21_screen_food_tab.md](21_screen_food_tab.md) | Food tab: daily progress card, entry list, add entry, and goal edit |
 
 ### Shell — The Permanent App Frame
 | File | What it covers |
@@ -79,17 +80,20 @@ It is meant to grow alongside the codebase. Every time a new screen, feature, or
 |------|---------------|
 | [07_feature_auth.md](07_feature_auth.md) | Firebase Authentication: login, register, logout |
 | [08_feature_routing.md](08_feature_routing.md) | GoRouter: navigation and redirect guards |
+| [24_feature_food.md](24_feature_food.md) | Food data layer: Firestore paths and repository behavior |
 
 ### ViewModels — Business Logic (MVVM)
 | File | What it covers |
 |------|---------------|
 | [12_viewmodel_auth.md](12_viewmodel_auth.md) | `AuthViewModel`: all auth logic, loading state, error handling |
 | [18_viewmodel_walk.md](18_viewmodel_walk.md) | `WalkViewModel`: step counting, pedometer, goal storage, Firestore sync |
+| [22_viewmodel_food.md](22_viewmodel_food.md) | `FoodViewModel`: daily goals, entries, and error/loading state |
 
 ### Models — Data Containers
 | File | What it covers |
 |------|---------------|
 | [17_model_day_steps.md](17_model_day_steps.md) | `DaySteps`: holds one day's date, step count, and goal |
+| [23_model_food_data.md](23_model_food_data.md) | `FoodEntry` and `DailyGoals`: food logs and targets |
 
 ### UI — Visual Building Blocks
 | File | What it covers |

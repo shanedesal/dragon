@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: daily_goals.dart
-/// Feature: Food
-/// Description: Domain model representing the user's daily nutritional targets.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: daily_goals.dart
+// Feature: Food
+// Description: Domain model representing the user's daily nutritional targets.
+// ------------------------------------------------------------------
 
 class DailyGoals {
   final int targetCalories;

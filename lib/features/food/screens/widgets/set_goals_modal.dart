@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: set_goals_modal.dart
-/// Feature: Food
-/// Description: A modal for users to update their daily food goals.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: set_goals_modal.dart
+// Feature: Food
+// Description: A modal for users to update their daily food goals.
+// ------------------------------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';

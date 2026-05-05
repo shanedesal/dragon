@@ -31,12 +31,24 @@ lib/
 │   │   │   └── register_screen.dart ← The registration form
 │   │   └── viewmodels/
 │   │       └── auth_viewmodel.dart  ← The brain behind login/register/logout logic
+│   ├── food/                        ← Everything related to food tracking
+│   │   ├── models/
+│   │   │   ├── daily_goals.dart      ← Daily calorie/protein targets
+│   │   │   └── food_entry.dart       ← One logged food item (name, calories, serving, time)
+│   │   ├── repositories/
+│   │   │   └── food_repository.dart  ← Firestore reads/writes for food entries and goals
+│   │   ├── screens/
+│   │   │   └── widgets/
+│   │   │       ├── add_food_modal.dart  ← Bottom sheet for adding a food entry
+│   │   │       └── set_goals_modal.dart ← Bottom sheet for editing daily goals
+│   │   └── viewmodels/
+│   │       └── food_viewmodel.dart   ← The brain behind food goals and daily entries
 │   ├── home/                        ← Everything inside the home area after logging in
 │   │   ├── models/
 │   │   │   └── day_steps.dart       ← Data container for one day's step count (date, steps, goal)
 │   │   ├── screens/
 │   │   │   ├── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
-│   │   │   ├── food_tab.dart        ← The "Food" tab content (placeholder for now)
+│   │   │   ├── food_tab.dart        ← The "Food" tab content (progress card, entry list, add button)
 │   │   │   └── walk_tab.dart        ← The "Walk" tab: step ring, goal card, and history list
 │   │   └── viewmodels/
 │   │       └── walk_viewmodel.dart  ← The brain behind step counting, permission, and Firestore sync

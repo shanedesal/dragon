@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-04] — Food tab docs and header rule sync
+
+**Code changed:** `CONSTITUTION.md`, `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/food/models/daily_goals.dart`, `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/home/screens/food_tab.dart`, `lib/main.dart`
+**Docs updated:** `00_overview.md`, `01_core_structure.md`, `02_core_entry_point.md`, `06_screen_home.md`, `13_shell_main.md`, `21_screen_food_tab.md`, `22_viewmodel_food.md`, `23_model_food_data.md`, `24_feature_food.md`, `INDEX.md`
+**Type:** new-file
+
+Food tracking now has real UI and data flow docs, so the Food tab, FoodViewModel, and repository are explained in plain English. The home shell and entry point docs now mention the FoodViewModel and the three-tab layout. The constitution header rule was also synced in code comments.
+
 ### [2026-05-04] — Auth session lock and walk sync tweaks
 
 **Code changed:** `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/home/viewmodels/walk_viewmodel.dart`

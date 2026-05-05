@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: food_repository.dart
-/// Feature: Food
-/// Description: Centralizes all Firebase Firestore calls for the food tracker.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: food_repository.dart
+// Feature: Food
+// Description: Centralizes all Firebase Firestore calls for the food tracker.
+// ------------------------------------------------------------------
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../shared/utils/app_logger.dart';

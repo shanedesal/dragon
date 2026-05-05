@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: food_viewmodel.dart
-/// Feature: Food
-/// Description: Manages state for the food tab and interacts with FoodRepository.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: food_viewmodel.dart
+// Feature: Food
+// Description: Manages state for the food tab and interacts with FoodRepository.
+// ------------------------------------------------------------------
 import 'package:flutter/foundation.dart';
 import '../../../shared/utils/app_logger.dart';
 import '../models/food_entry.dart';

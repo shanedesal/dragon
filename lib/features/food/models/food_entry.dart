@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: food_entry.dart
-/// Feature: Food
-/// Description: Domain model representing a single logged food item.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: food_entry.dart
+// Feature: Food
+// Description: Domain model representing a single logged food item.
+// ------------------------------------------------------------------
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FoodEntry {

@@ -3,7 +3,7 @@
 > **Files:** `lib/shell/main_shell.dart`, `lib/shell/navigation_viewmodel.dart`
 > **Category:** feature
 > **Added:** 2026-04-29
-> **Related files:** `06_screen_home.md`, `14_ui_profile_drawer.md`, `02_core_entry_point.md`, `12_viewmodel_auth.md`
+> **Related files:** `06_screen_home.md`, `14_ui_profile_drawer.md`, `02_core_entry_point.md`, `12_viewmodel_auth.md`, `19_screen_walk_tab.md`, `21_screen_food_tab.md`
 
 ---
 
@@ -12,7 +12,7 @@
 After login, the user enters a **shell** — a permanent outer frame that stays on screen no matter which tab they're on. The shell provides:
 
 - An **app bar** at the top (Dragon logo + avatar button on the left).
-- A **bottom navigation bar** for switching between tabs.
+- A **bottom navigation bar** for switching between three tabs (Home, Food, Walk).
 - A **drawer slot** for the `ProfileDrawer` to slide in from the left.
 
 The shell is made of two files:
@@ -33,7 +33,7 @@ The shell pattern separates **"the outer container"** from **"the content inside
 
 ### Switching tabs
 1. The user taps a destination in the bottom navigation bar.
-2. `onDestinationSelected` fires with the index (0 for Home, 1 for Food).
+2. `onDestinationSelected` fires with the index (0 for Home, 1 for Food, 2 for Walk).
 3. `context.read<NavigationViewModel>().setIndex(i)` is called.
 4. Inside `NavigationViewModel.setIndex()`, the index is updated and `notifyListeners()` is called — but *only* if the index actually changed (no unnecessary rebuilds).
 5. `MainShell` is watching `NavigationViewModel` with `context.watch`, so it rebuilds.
@@ -83,7 +83,7 @@ The `if (_currentIndex != index)` check is a small optimization: if you tap the 
 ## Code walkthrough
 
 ```dart
-static const List<Widget> _tabs = [HomeTab(), FoodTab()];
+static const List<Widget> _tabs = [HomeTab(), FoodTab(), WalkTab()];
 
 Widget build(BuildContext context) {
   final currentIndex = context.watch<NavigationViewModel>().currentIndex;

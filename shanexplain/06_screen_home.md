@@ -5,7 +5,7 @@
 > **Files:** `lib/shell/main_shell.dart`, `lib/features/home/screens/home_tab.dart`, `lib/features/home/screens/food_tab.dart`, `lib/features/home/screens/walk_tab.dart`
 > **Category:** screen
 > **Added:** 2026-04-29
-> **Related files:** `navigation_viewmodel.dart`, `auth_viewmodel.dart`, `profile_drawer.dart`, `13_shell_main.md`, `14_ui_profile_drawer.md`, `19_screen_walk_tab.md`
+> **Related files:** `navigation_viewmodel.dart`, `auth_viewmodel.dart`, `profile_drawer.dart`, `13_shell_main.md`, `14_ui_profile_drawer.md`, `19_screen_walk_tab.md`, `21_screen_food_tab.md`, `22_viewmodel_food.md`
 
 ---
 
@@ -14,12 +14,12 @@
 After logging in, the user lands on a **shell** — a permanent outer frame that stays on screen the whole time they're in the app. The shell has:
 
 - An **app bar** at the top with the Dragon logo and a profile avatar button on the left.
-- A **bottom navigation bar** with two tabs: "Home" and "Food."
+- A **bottom navigation bar** with three tabs: "Home", "Food", and "Walk."
 - A **slide-out drawer** (a panel that slides in from the left edge) for profile/logout.
 
 The content area in the middle swaps between tabs depending on which one the user tapped. Right now:
 - **Home tab** (`HomeTab`) — shows the welcome card with the user's email, a "Dashboard" heading, and a "You're all set!" placeholder.
-- **Food tab** (`FoodTab`) — shows a placeholder message. Real content coming later.
+- **Food tab** (`FoodTab`) — shows daily calorie progress, a list of entries, and buttons to add food or edit goals.
 - **Walk tab** (`WalkTab`) — a fully working step counter with a circular progress ring, walking/still status badge, daily goal card, and a history list synced to Firestore.
 
 Before this change, there was a single `HomeScreen` with a logout icon crammed into the top-right corner. The shell approach makes it easy to keep adding tabs and features without rewriting everything.
@@ -48,7 +48,7 @@ Most apps have a persistent frame — the bottom bar, the top bar, the drawer �
 4. **User taps a bottom tab** → calls `NavigationViewModel.setIndex(i)` → ViewModel updates → `MainShell` rebuilds → `body` shows the new tab.
 5. **User taps the avatar button in the app bar** → `Scaffold.of(context).openDrawer()` → the `ProfileDrawer` slides in from the left.
 6. **`HomeTab` renders** — it reads the logged-in user's email from `AuthViewModel` and shows the welcome card, dashboard heading, and the `_EmptyState` placeholder widget.
-7. **`FoodTab` renders** — just shows a placeholder for now.
+7. **`FoodTab` renders** — shows the progress card, entry list, and the add/edit actions. See `21_screen_food_tab.md` for details.
 8. **`WalkTab` renders** — shows the step ring, goal card, and history. Kicks off sensor tracking on first mount. See `19_screen_walk_tab.md` for the full detail.
 
 ---
@@ -114,5 +114,5 @@ class _ProfileAvatarButton extends StatelessWidget {
 - [ ] When you add a new tab, add a new widget to `_tabs` and a new `NavigationDestination` to the `bottomNavigationBar`
 - [ ] If you replace the placeholder icons with SVGs, update the code walkthrough
 - [ ] When `HomeTab` gets real content, update step 6 in "How does it work?"
-- [ ] When `FoodTab` gets real content, update step 7 and consider creating a dedicated shanexplain doc for it
+- [ ] When `FoodTab` changes, update step 7 and `21_screen_food_tab.md`
 - [ ] When `WalkTab` gains new features, update step 8 and `19_screen_walk_tab.md`

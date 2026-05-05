@@ -66,9 +66,9 @@ We use the **Model-View-ViewModel (MVVM)** pattern integrated with a **Repositor
 Every new Dart file should start with a brief, standardized header explaining its purpose:
 
 ```dart
-/// ------------------------------------------------------------------
-/// File: [filename.dart]
-/// Feature: [Feature Name / Shared / Shell]
-/// Description: [1-2 sentences describing what this file does.]
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: [filename.dart]
+// Feature: [Feature Name / Shared / Shell]
+// Description: [1-2 sentences describing what this file does.]
+// ------------------------------------------------------------------
 ```

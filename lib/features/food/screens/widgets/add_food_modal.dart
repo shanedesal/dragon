@@ -1,8 +1,8 @@
-/// ------------------------------------------------------------------
-/// File: add_food_modal.dart
-/// Feature: Food
-/// Description: A bottom sheet UI for users to punch in a new food.
-/// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// File: add_food_modal.dart
+// Feature: Food
+// Description: A bottom sheet UI for users to punch in a new food.
+// ------------------------------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_theme.dart';

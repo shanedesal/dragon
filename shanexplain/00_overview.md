@@ -14,7 +14,7 @@ This app is called **Dragon**. Right now it does the following:
 - Keeps a **single-device session lock** so the same account is not active on two devices at once
 - Shows a **shell** after logging in — a permanent frame with an app bar, a bottom navigation bar (three tabs: Home, Food, and Walk), and a slide-out profile drawer
 - The **Home tab** shows a welcome card with the user's email and a dashboard placeholder
-- The **Food tab** is a placeholder for future content
+- The **Food tab** is a simple food tracker: daily calorie progress, a list of what you logged today, and a button to add more food
 - The **Walk tab** is a fully working step counter: a circular progress ring, a daily goal you can edit, a "Walking/Still" status badge, and a history of your past days' steps synced to Firestore
 - Tapping the profile header in the drawer opens a **Profile Screen** showing the user's avatar and email
 - Tapping "Settings" in the drawer opens a **Settings Screen** (placeholder for now)
@@ -66,7 +66,7 @@ Is the user already logged in?
 
 Inside the Main Shell:
     ↓
-    Bottom nav: [ Home tab | Food tab ]
+    Bottom nav: [ Home tab | Food tab | Walk tab ]
     Left corner: Avatar button → opens Profile Drawer (logout here)
 ```
 
