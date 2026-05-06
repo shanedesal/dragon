@@ -24,11 +24,7 @@ class MainShell extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              'assets/images/logo.svg',
-              width: 28,
-              height: 28,
-            ),
+            SvgPicture.asset('assets/images/logo.svg', width: 28, height: 28),
             const SizedBox(width: 10),
             const Text('Dragon'),
           ],
@@ -118,8 +114,7 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final email =
-        context.watch<AuthViewModel>().currentUser?.email ?? '';
+    final email = context.watch<AuthViewModel>().currentUser?.email ?? '';
     final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
 
     return IconButton(

@@ -27,9 +27,7 @@ class ProfileDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ProfileScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
                 );
               },
               child: Padding(
@@ -105,9 +103,7 @@ class ProfileDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),

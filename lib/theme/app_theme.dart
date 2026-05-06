@@ -6,22 +6,22 @@ class CatppuccinMocha {
 
   // Accents
   static const Color rosewater = Color(0xFFf5e0dc);
-  static const Color flamingo  = Color(0xFFf2cdcd);
-  static const Color pink      = Color(0xFFf5c2e7);
-  static const Color mauve     = Color(0xFFcba6f7);
-  static const Color red       = Color(0xFFf38ba8);
-  static const Color maroon    = Color(0xFFeba0ac);
-  static const Color peach     = Color(0xFFfab387);
-  static const Color yellow    = Color(0xFFf9e2af);
-  static const Color green     = Color(0xFFa6e3a1);
-  static const Color teal      = Color(0xFF94e2d5);
-  static const Color sky       = Color(0xFF89dceb);
-  static const Color sapphire  = Color(0xFF74c7ec);
-  static const Color blue      = Color(0xFF89b4fa);
-  static const Color lavender  = Color(0xFFb4befe);
+  static const Color flamingo = Color(0xFFf2cdcd);
+  static const Color pink = Color(0xFFf5c2e7);
+  static const Color mauve = Color(0xFFcba6f7);
+  static const Color red = Color(0xFFf38ba8);
+  static const Color maroon = Color(0xFFeba0ac);
+  static const Color peach = Color(0xFFfab387);
+  static const Color yellow = Color(0xFFf9e2af);
+  static const Color green = Color(0xFFa6e3a1);
+  static const Color teal = Color(0xFF94e2d5);
+  static const Color sky = Color(0xFF89dceb);
+  static const Color sapphire = Color(0xFF74c7ec);
+  static const Color blue = Color(0xFF89b4fa);
+  static const Color lavender = Color(0xFFb4befe);
 
   // Text
-  static const Color text     = Color(0xFFcdd6f4);
+  static const Color text = Color(0xFFcdd6f4);
   static const Color subtext1 = Color(0xFFbac2de);
   static const Color subtext0 = Color(0xFFa6adc8);
 
@@ -36,9 +36,9 @@ class CatppuccinMocha {
   static const Color surface0 = Color(0xFF313244);
 
   // Backgrounds
-  static const Color base    = Color(0xFF1e1e2e);
-  static const Color mantle  = Color(0xFF181825);
-  static const Color crust   = Color(0xFF11111b);
+  static const Color base = Color(0xFF1e1e2e);
+  static const Color mantle = Color(0xFF181825);
+  static const Color crust = Color(0xFF11111b);
 }
 
 class AppTheme {
@@ -96,7 +96,10 @@ class AppTheme {
         floatingLabelStyle: const TextStyle(color: CatppuccinMocha.mauve),
         prefixIconColor: CatppuccinMocha.overlay2,
         suffixIconColor: CatppuccinMocha.overlay2,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: CatppuccinMocha.surface1),
@@ -140,9 +143,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: CatppuccinMocha.mauve,
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       appBarTheme: const AppBarTheme(
@@ -171,9 +172,7 @@ class AppTheme {
         color: CatppuccinMocha.surface1,
         space: 1,
       ),
-      iconTheme: const IconThemeData(
-        color: CatppuccinMocha.subtext1,
-      ),
+      iconTheme: const IconThemeData(color: CatppuccinMocha.subtext1),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: CatppuccinMocha.mantle,
         indicatorColor: Color.fromRGBO(203, 166, 247, 0.2),

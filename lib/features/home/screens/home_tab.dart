@@ -94,19 +94,14 @@ class HomeTab extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            Text(
-              'Dashboard',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Dashboard', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Text(
               'More content coming soon.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
 
-            const Expanded(
-              child: Center(child: _EmptyState()),
-            ),
+            const Expanded(child: Center(child: _EmptyState())),
           ],
         ),
       ),
@@ -148,10 +143,7 @@ class _EmptyState extends StatelessWidget {
         const SizedBox(height: 6),
         const Text(
           'Nothing to do right now.',
-          style: TextStyle(
-            color: CatppuccinMocha.subtext0,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: CatppuccinMocha.subtext0, fontSize: 13),
         ),
       ],
     );

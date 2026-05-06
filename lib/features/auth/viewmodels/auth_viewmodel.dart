@@ -135,7 +135,8 @@ class AuthViewModel extends ChangeNotifier {
     }
 
     final random = Random();
-    final id = 'dev_${DateTime.now().millisecondsSinceEpoch}_${random.nextInt(1 << 32)}';
+    final id =
+        'dev_${DateTime.now().millisecondsSinceEpoch}_${random.nextInt(1 << 32)}';
     await _prefs!.setString('device_id', id);
     _deviceId = id;
     return id;
@@ -172,15 +173,11 @@ class AuthViewModel extends ChangeNotifier {
           }
         }
 
-        tx.set(
-          lockRef,
-          {
-            'deviceId': deviceId,
-            'lastSeenAt': FieldValue.serverTimestamp(),
-            'claimedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        tx.set(lockRef, {
+          'deviceId': deviceId,
+          'lastSeenAt': FieldValue.serverTimestamp(),
+          'claimedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       });
     }
 

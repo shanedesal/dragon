@@ -10,9 +10,5 @@ class DaySteps {
   final int steps;
   final int goal;
 
-  const DaySteps({
-    required this.date,
-    required this.steps,
-    required this.goal,
-  });
+  const DaySteps({required this.date, required this.steps, required this.goal});
 }

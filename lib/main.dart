@@ -20,9 +20,7 @@ void main() async {
   AppLogger.d('App', 'Bootstrapping');
   WidgetsFlutterBinding.ensureInitialized();
   AppLogger.d('App', 'Firebase initialize start');
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   AppLogger.d('App', 'Firebase initialize done');
   runApp(
     MultiProvider(
@@ -41,16 +39,14 @@ void main() async {
 // whenever the Firebase auth state changes.
 class _AuthNotifier extends ChangeNotifier {
   _AuthNotifier() {
-    FirebaseAuth.instance
-        .authStateChanges()
-        .listen((user) {
-          AppLogger.d(
-            'Auth',
-            'Auth state changed: uid=${user?.uid ?? 'null'} '
-                'email=${user?.email ?? 'null'}',
-          );
-          notifyListeners();
-        });
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      AppLogger.d(
+        'Auth',
+        'Auth state changed: uid=${user?.uid ?? 'null'} '
+            'email=${user?.email ?? 'null'}',
+      );
+      notifyListeners();
+    });
   }
 }
 
@@ -77,22 +73,10 @@ final _router = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/splash',
-      builder: (_, _) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (_, _) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      builder: (_, _) => const RegisterScreen(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (_, _) => const MainShell(),
-    ),
+    GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
+    GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+    GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+    GoRoute(path: '/home', builder: (_, _) => const MainShell()),
   ],
 );
 

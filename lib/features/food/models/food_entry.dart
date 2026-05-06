@@ -40,23 +40,28 @@ class FoodEntry {
     final legacyServing = json['servingSize'] as String?;
     var quantity = json['quantity'] as int? ?? 1;
     var unit = json['unit'] as String? ?? 'serving';
-    if (json['quantity'] == null && legacyServing != null && legacyServing.isNotEmpty) {
+    if (json['quantity'] == null &&
+        legacyServing != null &&
+        legacyServing.isNotEmpty) {
       unit = legacyServing;
     }
-    final totalCalories = json['totalCalories'] as int?
-        ?? json['calories'] as int?
-        ?? 0;
+    final totalCalories =
+        json['totalCalories'] as int? ?? json['calories'] as int? ?? 0;
     final totalProtein = json['totalProtein'] as int? ?? 0;
     final totalCarbs = json['totalCarbs'] as int? ?? 0;
     final totalFat = json['totalFat'] as int? ?? 0;
-    final caloriesPerUnit = json['caloriesPerUnit'] as int?
-        ?? (quantity > 0 ? (totalCalories / quantity).round() : 0);
-    final proteinPerUnit = json['proteinPerUnit'] as int?
-        ?? (quantity > 0 ? (totalProtein / quantity).round() : 0);
-    final carbsPerUnit = json['carbsPerUnit'] as int?
-        ?? (quantity > 0 ? (totalCarbs / quantity).round() : 0);
-    final fatPerUnit = json['fatPerUnit'] as int?
-        ?? (quantity > 0 ? (totalFat / quantity).round() : 0);
+    final caloriesPerUnit =
+        json['caloriesPerUnit'] as int? ??
+        (quantity > 0 ? (totalCalories / quantity).round() : 0);
+    final proteinPerUnit =
+        json['proteinPerUnit'] as int? ??
+        (quantity > 0 ? (totalProtein / quantity).round() : 0);
+    final carbsPerUnit =
+        json['carbsPerUnit'] as int? ??
+        (quantity > 0 ? (totalCarbs / quantity).round() : 0);
+    final fatPerUnit =
+        json['fatPerUnit'] as int? ??
+        (quantity > 0 ? (totalFat / quantity).round() : 0);
 
     return FoodEntry(
       id: id,

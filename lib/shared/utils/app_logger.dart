@@ -12,11 +12,6 @@ class AppLogger {
     StackTrace? stackTrace,
   }) {
     if (!kDebugMode) return;
-    developer.log(
-      message,
-      name: tag,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    developer.log(message, name: tag, error: error, stackTrace: stackTrace);
   }
 }

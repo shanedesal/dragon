@@ -91,14 +91,14 @@ class _AddFoodModalState extends State<AddFoodModal> {
           'kcal=$totalCalories p=$totalProtein c=$totalCarbs f=$totalFat',
     );
     context.read<FoodViewModel>().addFoodEntry(
-          name,
-          quantity,
-          _selectedUnit,
-          caloriesPerUnit,
-          proteinPerUnit,
-          carbsPerUnit,
-          fatPerUnit,
-        );
+      name,
+      quantity,
+      _selectedUnit,
+      caloriesPerUnit,
+      proteinPerUnit,
+      carbsPerUnit,
+      fatPerUnit,
+    );
     Navigator.of(context).pop();
   }
 

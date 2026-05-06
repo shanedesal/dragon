@@ -24,13 +24,13 @@ class FoodViewModel extends ChangeNotifier {
   DailyGoals _dailyGoals = DailyGoals(targetCalories: 2000, targetProtein: 100);
   DailyGoals get dailyGoals => _dailyGoals;
 
-    int get totalCalories =>
+  int get totalCalories =>
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalCalories);
-    int get totalProtein =>
+  int get totalProtein =>
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalProtein);
-    int get totalCarbs =>
+  int get totalCarbs =>
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalCarbs);
-    int get totalFat =>
+  int get totalFat =>
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalFat);
 
   FoodViewModel() {
@@ -46,7 +46,10 @@ class FoodViewModel extends ChangeNotifier {
       AppLogger.d('FoodViewModel', 'Fetching food data...');
       _dailyGoals = await _repository.getDailyGoals();
       _dailyEntries = await _repository.getDailyFoodEntries();
-      AppLogger.d('FoodViewModel', 'Fetched ${_dailyEntries.length} entries for today.');
+      AppLogger.d(
+        'FoodViewModel',
+        'Fetched ${_dailyEntries.length} entries for today.',
+      );
     } catch (e, stack) {
       _errorMessage = 'Failed to load food data: $e';
       AppLogger.d('FoodViewModel', _errorMessage!, error: e, stackTrace: stack);
@@ -94,7 +97,7 @@ class FoodViewModel extends ChangeNotifier {
         totalFat: totalFat,
         timestamp: DateTime.now(),
       );
-      
+
       await _repository.addFoodEntry(entry);
       // Refresh list after adding
       _dailyEntries = await _repository.getDailyFoodEntries();
@@ -115,7 +118,10 @@ class FoodViewModel extends ChangeNotifier {
 
     try {
       AppLogger.d('FoodViewModel', 'Updating daily goals...');
-      final newGoals = DailyGoals(targetCalories: targetCalories, targetProtein: targetProtein);
+      final newGoals = DailyGoals(
+        targetCalories: targetCalories,
+        targetProtein: targetProtein,
+      );
       await _repository.setDailyGoals(newGoals);
       _dailyGoals = newGoals;
       AppLogger.d('FoodViewModel', 'Daily goals updated successfully.');

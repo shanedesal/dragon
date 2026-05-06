@@ -59,7 +59,10 @@ class _SetGoalsModalState extends State<SetGoalsModal> {
       final calories = int.parse(_caloriesController.text.trim());
       final protein = int.parse(_proteinController.text.trim());
 
-      AppLogger.d('FoodGoals', 'Save goals: $calories kcal / $protein g protein');
+      AppLogger.d(
+        'FoodGoals',
+        'Save goals: $calories kcal / $protein g protein',
+      );
       context.read<FoodViewModel>().updateDailyGoals(calories, protein);
       Navigator.of(context).pop();
     }
@@ -125,7 +128,10 @@ class _SetGoalsModalState extends State<SetGoalsModal> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Save Goals', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: const Text(
+                'Save Goals',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ],
         ),

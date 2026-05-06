@@ -113,10 +113,7 @@ class _WebUnavailableBanner extends StatelessWidget {
           Text(
             'Open Dragon on your phone or tablet\nto track your daily steps.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CatppuccinMocha.subtext0,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: CatppuccinMocha.subtext0, fontSize: 13),
           ),
         ],
       ),
@@ -134,8 +131,9 @@ class _StepRingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (vm.todaySteps / vm.stepGoal).clamp(0.0, 1.0);
     final goalReached = progress >= 1.0;
-    final ringColor =
-        goalReached ? CatppuccinMocha.green : CatppuccinMocha.mauve;
+    final ringColor = goalReached
+        ? CatppuccinMocha.green
+        : CatppuccinMocha.mauve;
     final isWalking = vm.status == 'walking';
 
     return Container(
@@ -238,8 +236,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isWalking ? CatppuccinMocha.green : CatppuccinMocha.overlay1;
+    final color = isWalking ? CatppuccinMocha.green : CatppuccinMocha.overlay1;
     final bgColor = isWalking
         ? const Color.fromRGBO(166, 227, 161, 0.15)
         : const Color.fromRGBO(127, 132, 156, 0.1);
@@ -291,9 +288,7 @@ class _PermissionBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color.fromRGBO(243, 139, 168, 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color.fromRGBO(243, 139, 168, 0.3),
-        ),
+        border: Border.all(color: const Color.fromRGBO(243, 139, 168, 0.3)),
       ),
       child: const Row(
         children: [
@@ -386,8 +381,7 @@ class _GoalCard extends StatelessWidget {
 
   Future<void> _showGoalDialog(BuildContext context) async {
     AppLogger.d('WalkUI', 'Open goal dialog');
-    final controller =
-        TextEditingController(text: vm.stepGoal.toString());
+    final controller = TextEditingController(text: vm.stepGoal.toString());
 
     final result = await showDialog<int>(
       context: context,
@@ -529,8 +523,9 @@ class _HistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final achieved = day.steps >= day.goal;
     final progress = (day.steps / day.goal).clamp(0.0, 1.0);
-    final progressColor =
-        achieved ? CatppuccinMocha.green : CatppuccinMocha.mauve;
+    final progressColor = achieved
+        ? CatppuccinMocha.green
+        : CatppuccinMocha.mauve;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -584,8 +579,7 @@ class _HistoryItem extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     backgroundColor: CatppuccinMocha.surface1,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(progressColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                     minHeight: 4,
                   ),
                 ),
@@ -641,8 +635,18 @@ class _HistoryItem extends StatelessWidget {
       if (d == yesterday) return 'Yesterday';
 
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     } catch (_) {

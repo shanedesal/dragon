@@ -227,7 +227,10 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       final remoteGoal = (data?['stepGoal'] as num?)?.toInt();
       if (remoteGoal != null && remoteGoal > 0) {
         _goal = StepGoal(targetSteps: remoteGoal);
-        await _prefs?.setInt(_userKey(user.uid, 'step_goal'), _goal.targetSteps);
+        await _prefs?.setInt(
+          _userKey(user.uid, 'step_goal'),
+          _goal.targetSteps,
+        );
         return;
       }
     } catch (e, st) {
@@ -245,13 +248,10 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     if (user == null) return;
 
     try {
-      await _firestore.collection('users').doc(user.uid).set(
-        {
-          ..._goal.toJson(),
-          'goalUpdatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      await _firestore.collection('users').doc(user.uid).set({
+        ..._goal.toJson(),
+        'goalUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e, st) {
       AppLogger.d('WalkGoal', 'Goal save failed', error: e, stackTrace: st);
     }
@@ -388,10 +388,10 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
           .collection('steps')
           .doc(docId)
           .set({
-        'steps': _todaySteps,
-        'goal': _goal.targetSteps,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'steps': _todaySteps,
+            'goal': _goal.targetSteps,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
       _upsertTodayHistory();
       AppLogger.d('WalkFirestore', 'Save complete');
     } catch (e, st) {
@@ -419,7 +419,12 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       final data = snap.data();
       _todaySteps = (data?['steps'] as num?)?.toInt() ?? 0;
     } catch (e, st) {
-      AppLogger.d('WalkFirestore', 'Today load failed', error: e, stackTrace: st);
+      AppLogger.d(
+        'WalkFirestore',
+        'Today load failed',
+        error: e,
+        stackTrace: st,
+      );
     }
     _lastLoadedDate = _todayString();
   }
@@ -463,7 +468,8 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     if (!kDebugMode) return;
     final now = DateTime.now();
     final timeReady =
-        _lastStepLogAt == null || now.difference(_lastStepLogAt!).inSeconds >= 10;
+        _lastStepLogAt == null ||
+        now.difference(_lastStepLogAt!).inSeconds >= 10;
     final stepDelta = (_todaySteps - _lastLoggedSteps).abs() >= 100;
     if (!timeReady && !stepDelta) return;
 

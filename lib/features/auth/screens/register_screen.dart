@@ -33,9 +33,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await context.read<AuthViewModel>().register(
-          _emailController.text,
-          _passwordController.text,
-        );
+      _emailController.text,
+      _passwordController.text,
+    );
   }
 
   @override
@@ -96,8 +96,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (v == null || v.isEmpty) {
                               return 'Please enter your email';
                             }
-                            if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                .hasMatch(v.trim())) {
+                            if (!RegExp(
+                              r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                            ).hasMatch(v.trim())) {
                               return 'Please enter a valid email';
                             }
                             return null;

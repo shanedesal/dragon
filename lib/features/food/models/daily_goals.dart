@@ -8,10 +8,7 @@ class DailyGoals {
   final int targetCalories;
   final int targetProtein;
 
-  DailyGoals({
-    required this.targetCalories,
-    required this.targetProtein,
-  });
+  DailyGoals({required this.targetCalories, required this.targetProtein});
 
   factory DailyGoals.fromJson(Map<String, dynamic> json) {
     return DailyGoals(
@@ -21,9 +18,6 @@ class DailyGoals {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'targetCalories': targetCalories,
-      'targetProtein': targetProtein,
-    };
+    return {'targetCalories': targetCalories, 'targetProtein': targetProtein};
   }
 }

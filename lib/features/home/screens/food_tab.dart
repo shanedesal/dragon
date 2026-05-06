@@ -22,7 +22,9 @@ class FoodTab extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: vm.isLoading && vm.dailyEntries.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: CatppuccinMocha.mauve))
+            ? const Center(
+                child: CircularProgressIndicator(color: CatppuccinMocha.mauve),
+              )
             : RefreshIndicator(
                 color: CatppuccinMocha.mauve,
                 onRefresh: () async {
@@ -85,16 +87,16 @@ class FoodTab extends StatelessWidget {
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
                         sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final entry = vm.dailyEntries[index];
-                              return _FoodEntryCard(
-                                entry: entry,
-                                onDelete: () => vm.deleteFoodEntry(entry.id),
-                              );
-                            },
-                            childCount: vm.dailyEntries.length,
-                          ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final entry = vm.dailyEntries[index];
+                            return _FoodEntryCard(
+                              entry: entry,
+                              onDelete: () => vm.deleteFoodEntry(entry.id),
+                            );
+                          }, childCount: vm.dailyEntries.length),
                         ),
                       ),
                       const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -116,10 +118,7 @@ class _EmptyFoodState extends StatelessWidget {
   final VoidCallback onAddPressed;
   final double bottomPadding;
 
-  const _EmptyFoodState({
-    required this.onAddPressed,
-    this.bottomPadding = 0,
-  });
+  const _EmptyFoodState({required this.onAddPressed, this.bottomPadding = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -160,10 +159,7 @@ class _EmptyFoodState extends StatelessWidget {
               const Text(
                 'Start tracking your meals and macros.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: CatppuccinMocha.subtext0,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: CatppuccinMocha.subtext0, fontSize: 13),
               ),
               const SizedBox(height: 18),
               TextButton.icon(
@@ -185,14 +181,15 @@ Widget _buildSummaryCard(
   int calorieGoal,
   int proteinGoal,
 ) {
-  final calorieProgress =
-      calorieGoal > 0 ? vm.totalCalories / calorieGoal : 0.0;
-  final proteinProgress =
-      proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
+  final calorieProgress = calorieGoal > 0
+      ? vm.totalCalories / calorieGoal
+      : 0.0;
+  final proteinProgress = proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
   final caloriesRemaining = max(0, calorieGoal - vm.totalCalories);
   final proteinRemaining = max(0, proteinGoal - vm.totalProtein);
-  final calorieColor =
-      calorieProgress >= 1.0 ? CatppuccinMocha.red : CatppuccinMocha.mauve;
+  final calorieColor = calorieProgress >= 1.0
+      ? CatppuccinMocha.red
+      : CatppuccinMocha.mauve;
 
   return Container(
     padding: const EdgeInsets.all(20),
@@ -234,10 +231,7 @@ Widget _buildSummaryCard(
         const SizedBox(height: 2),
         Text(
           '$caloriesRemaining kcal remaining',
-          style: const TextStyle(
-            color: CatppuccinMocha.subtext0,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: CatppuccinMocha.subtext0, fontSize: 12),
         ),
         const SizedBox(height: 16),
         _ProgressRow(
@@ -540,4 +534,3 @@ class _FoodEntryCard extends StatelessWidget {
     return '$hour:$minute $period';
   }
 }
-
