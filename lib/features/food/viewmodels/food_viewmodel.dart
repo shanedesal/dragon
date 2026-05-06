@@ -3,13 +3,15 @@
 // Feature: Food
 // Description: Manages state for the food tab and interacts with FoodRepository.
 // ------------------------------------------------------------------
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import '../../../shared/utils/app_logger.dart';
 import '../models/food_entry.dart';
 import '../models/daily_goals.dart';
 import '../repositories/food_repository.dart';
 
-class FoodViewModel extends ChangeNotifier {
+class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
   final FoodRepository _repository = FoodRepository();
 
   bool _isLoading = false;
@@ -24,6 +26,10 @@ class FoodViewModel extends ChangeNotifier {
   DailyGoals _dailyGoals = DailyGoals(targetCalories: 2000, targetProtein: 100);
   DailyGoals get dailyGoals => _dailyGoals;
 
+  String _lastLoadedDate = '';
+  Timer? _midnightTimer;
+  bool _observerAttached = false;
+
   int get totalCalories =>
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalCalories);
   int get totalProtein =>
@@ -34,27 +40,35 @@ class FoodViewModel extends ChangeNotifier {
       _dailyEntries.fold(0, (sum, entry) => sum + entry.totalFat);
 
   FoodViewModel() {
-    fetchFoodData();
+    WidgetsBinding.instance.addObserver(this);
+    _observerAttached = true;
+    AppLogger.d('Food', 'FoodViewModel created');
+    fetchFoodData(reason: 'startup');
   }
 
-  Future<void> fetchFoodData() async {
+  Future<void> fetchFoodData({String reason = 'manual'}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      AppLogger.d('FoodViewModel', 'Fetching food data...');
-      _dailyGoals = await _repository.getDailyGoals();
-      _dailyEntries = await _repository.getDailyFoodEntries();
       AppLogger.d(
         'FoodViewModel',
-        'Fetched ${_dailyEntries.length} entries for today.',
+        'Fetching food data (reason=$reason date=${_todayString()})',
+      );
+      _dailyGoals = await _repository.getDailyGoals();
+      _dailyEntries = await _repository.getDailyFoodEntries();
+      _lastLoadedDate = _todayString();
+      AppLogger.d(
+        'FoodViewModel',
+        'Fetched ${_dailyEntries.length} entries for $_lastLoadedDate',
       );
     } catch (e, stack) {
       _errorMessage = 'Failed to load food data: $e';
       AppLogger.d('FoodViewModel', _errorMessage!, error: e, stackTrace: stack);
     } finally {
       _isLoading = false;
+      _scheduleMidnightRefresh();
       notifyListeners();
     }
   }
@@ -73,6 +87,7 @@ class FoodViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      AppLogger.d('FoodViewModel', 'Add food entry requested: $name');
       final totalCalories = quantity * caloriesPerUnit;
       final totalProtein = quantity * proteinPerUnit;
       final totalCarbs = quantity * carbsPerUnit;
@@ -101,6 +116,7 @@ class FoodViewModel extends ChangeNotifier {
       await _repository.addFoodEntry(entry);
       // Refresh list after adding
       _dailyEntries = await _repository.getDailyFoodEntries();
+      _lastLoadedDate = _todayString();
       AppLogger.d('FoodViewModel', 'Food entry added successfully.');
     } catch (e, stack) {
       _errorMessage = 'Failed to add food entry: $e';
@@ -117,7 +133,10 @@ class FoodViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      AppLogger.d('FoodViewModel', 'Updating daily goals...');
+      AppLogger.d(
+        'FoodViewModel',
+        'Updating daily goals: $targetCalories kcal / $targetProtein g',
+      );
       final newGoals = DailyGoals(
         targetCalories: targetCalories,
         targetProtein: targetProtein,
@@ -152,5 +171,62 @@ class FoodViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    AppLogger.d('Food', 'App resumed, refreshing food data');
+    fetchFoodData(reason: 'resume');
+  }
+
+  Future<void> _refreshForMidnight() async {
+    final today = _todayString();
+    if (_lastLoadedDate == today) {
+      AppLogger.d('Food', 'Midnight refresh skipped: already on $today');
+      return;
+    }
+
+    AppLogger.d(
+      'Food',
+      'Midnight refresh triggered: $_lastLoadedDate -> $today',
+    );
+    await fetchFoodData(reason: 'midnight');
+  }
+
+  void _scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final delay = nextMidnight.difference(now);
+
+    AppLogger.d(
+      'Food',
+      'Midnight refresh scheduled in ${delay.inMinutes}m ${delay.inSeconds % 60}s',
+    );
+
+    _midnightTimer = Timer(delay, () {
+      AppLogger.d('Food', 'Midnight refresh timer fired');
+      _refreshForMidnight();
+    });
+  }
+
+  String _todayString() {
+    final now = DateTime.now();
+    return '${now.year}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    AppLogger.d('Food', 'Dispose: cancelling midnight timer and observer');
+    _midnightTimer?.cancel();
+    if (_observerAttached) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observerAttached = false;
+    }
+    super.dispose();
   }
 }

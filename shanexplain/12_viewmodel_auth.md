@@ -5,6 +5,8 @@
 > **Added:** 2026-04-29
 > **Related files:** `04_screen_login.md`, `05_screen_register.md`, `06_screen_home.md`, `02_core_entry_point.md`, `07_feature_auth.md`, `14_ui_profile_drawer.md`
 
+> ⚠️ **Updated [2026-05-06]:** Session lock claiming now handles offline and network errors gracefully — if the lock cannot be claimed due to permission or network issues, the login continues rather than crashing. This is safer when the device is offline.
+
 ---
 
 ## What is this?
@@ -48,9 +50,12 @@ The waiter doesn't need to know how the food is made. The screen doesn't need to
 2. `login()` sets `_isLoading = true` and calls `notifyListeners()` — which tells every screen watching this ViewModel to redraw. The button becomes a spinner.
 3. Firebase is called: `signInWithEmailAndPassword(email, password)`.
 4. After Firebase accepts the login, the ViewModel **claims a session lock** in Firestore. This is a tiny document that says "this device is active."
-5. **If another device already has the lock**, the ViewModel sets an error message, signs out immediately, and the user stays on the login screen.
-6. **Success** → The lock is claimed, `_isLoading` is set back to `false`, and GoRouter's redirect detects the login and navigates to `/home` automatically.
-7. **Failure** → The `FirebaseAuthException` is caught. `_errorMessage` is set to a human-readable string. `notifyListeners()` fires again. The screen redraws and shows the error banner.
+5. **If the lock claim fails** (e.g., network error, permission denied):
+   - If it's a permission error, the ViewModel refreshes the auth token and retries once.
+   - If it still fails or if it's a network error (offline, service unavailable), the ViewModel logs it but **continues anyway** — it doesn't crash the app. The user is allowed to login even if the lock cannot be claimed.
+6. **If another device already has the lock**, the ViewModel sets an error message, signs out immediately, and the user stays on the login screen.
+7. **Success** → The lock is claimed (or skipped gracefully offline), `_isLoading` is set back to `false`, and GoRouter's redirect detects the login and navigates to `/home` automatically.
+8. **Failure** → The `FirebaseAuthException` is caught. `_errorMessage` is set to a human-readable string. `notifyListeners()` fires again. The screen redraws and shows the error banner.
 
 ### When the user taps "Sign Out":
 1. The screen calls `context.read<AuthViewModel>().logout()`.
@@ -80,6 +85,7 @@ The waiter doesn't need to know how the food is made. The screen doesn't need to
 | `SharedPreferences` | Local storage used here to keep a stable device id. That id is written into the session lock. |
 | Firestore session lock | A small document in `users/{uid}/session/lock` that marks which device is active. |
 | `Timer.periodic` | Runs the lock heartbeat every 30 seconds so the lock does not go stale. |
+| Graceful degradation | When the network is down or permission is denied, the ViewModel logs the error but doesn't crash — it lets the user continue offline. |
 
 ---
 
@@ -129,7 +135,49 @@ Future<void> login(String email, String password) async {
   }
 }
 ```
-**What this does:** The login method. It sets loading, calls Firebase, then tries to claim the session lock. If another device already holds the lock, it shows a friendly error and signs out right away. Either way, `finally` runs at the end to turn loading off and redraw the UI.
+**What this does:** The login method. It sets loading, calls Firebase, then tries to claim the session lock. If another device already holds the lock, it shows a friendly error and signs out right away. If the lock claim fails for offline/network reasons, `_claimSessionLock()` handles it gracefully and returns anyway. Either way, `finally` runs at the end to turn loading off and redraw the UI.
+
+### Session lock claiming with offline tolerance
+
+```dart
+Future<void> _claimSessionLock({bool force = false}) async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  var lockClaimed = false;
+  try {
+    await runLockTransaction();
+    lockClaimed = true;
+  } on FirebaseException catch (e, st) {
+    // Permission issue: try refreshing the token once
+    if (e.code == 'permission-denied') {
+      try {
+        await user.getIdToken(true);
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await runLockTransaction();
+        lockClaimed = true;
+      } catch (err, st2) {
+        AppLogger.d('AuthLock', 'Retry after token refresh failed', error: err);
+      }
+    } else {
+      // Network/unavailable error: log but don't rethrow
+      AppLogger.d('AuthLock', 'Non-permission Firestore error', error: e);
+    }
+  } catch (e, st) {
+    AppLogger.d('AuthLock', 'Unexpected error while claiming lock', error: e);
+  }
+
+  if (!lockClaimed) {
+    AppLogger.d('AuthLock', 'Skipping session lock (likely offline)');
+    return;
+  }
+
+  // Lock was claimed successfully — start heartbeat and listener
+  _startSessionHeartbeat();
+  _startLockListener(user.uid);
+}
+```
+**What this does:** Tries to claim the lock in a Firestore transaction. If permission is denied, it refreshes the auth token and retries. If the error is network-related (unavailable, offline), it logs the error but returns gracefully without crashing. The `lockClaimed` flag tracks whether the lock was successfully claimed so the heartbeat only starts if needed.
 
 ```dart
 String _mapFirebaseError(String code) {

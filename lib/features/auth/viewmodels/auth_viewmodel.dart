@@ -181,20 +181,57 @@ class AuthViewModel extends ChangeNotifier {
       });
     }
 
+    var lockClaimed = false;
     try {
       await runLockTransaction();
-    } on FirebaseException catch (e) {
+      lockClaimed = true;
+    } on FirebaseException catch (e, st) {
+      // Handle permission issues by refreshing token once; otherwise treat
+      // network/unavailable errors as non-fatal and continue without claiming
+      // the lock to avoid crashing the app when offline.
       if (e.code == 'permission-denied') {
         AppLogger.d(
           'AuthLock',
           'Permission denied on lock claim, refreshing token and retrying',
         );
-        await user.getIdToken(true);
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        await runLockTransaction();
+        try {
+          await user.getIdToken(true);
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          await runLockTransaction();
+          lockClaimed = true;
+        } catch (err, st2) {
+          AppLogger.d(
+            'AuthLock',
+            'Retry after token refresh failed',
+            error: err,
+            stackTrace: st2,
+          );
+        }
       } else {
-        rethrow;
+        AppLogger.d(
+          'AuthLock',
+          'Non-permission Firestore error while claiming lock',
+          error: e,
+          stackTrace: st,
+        );
+        // Common offline/network errors surface here (e.g., 'unavailable').
+        // Do not rethrow — treat as transient and skip claiming the lock now.
       }
+    } catch (e, st) {
+      AppLogger.d(
+        'AuthLock',
+        'Unexpected error while claiming lock',
+        error: e,
+        stackTrace: st,
+      );
+    }
+
+    if (!lockClaimed) {
+      AppLogger.d(
+        'AuthLock',
+        'Skipping session lock since claim failed (likely offline)',
+      );
+      return;
     }
 
     if (force) {

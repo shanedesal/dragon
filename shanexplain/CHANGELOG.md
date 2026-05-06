@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-06] — Session lock resilience, midnight auto-refresh, and day rollover
+
+**Code changed:** `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/walk/viewmodels/walk_viewmodel.dart`
+**Docs updated:** `12_viewmodel_auth.md`, `22_viewmodel_food.md`, `18_viewmodel_walk.md`, `07_feature_auth.md`, `11_full_flow.md`
+**Type:** update
+
+Session lock claiming now gracefully handles offline and network errors — if the lock cannot be claimed due to permissions or being offline, the login continues anyway instead of crashing. The Food and Walk ViewModels now both auto-refresh at midnight to handle day changes, and the Food tab also refreshes when the app resumes from the background. This keeps today's data fresh and accurate even when the app stays open overnight or is backgrounded. The auth feature and full flow docs were updated to explain the graceful offline behavior.
+
 ### [2026-05-05] — Food macros and entry detail upgrade
 
 **Code changed:** `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/home/screens/food_tab.dart`

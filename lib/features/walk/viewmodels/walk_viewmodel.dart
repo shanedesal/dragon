@@ -103,6 +103,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     await _loadUserPrefs(user.uid);
     await _loadUserGoal();
     await _loadTodayFromFirestore();
+    _scheduleMidnightRollover();
     _needsImmediateSave = true;
 
     if (!_observerAttached) {
@@ -160,6 +161,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       () async {
         await _loadUserGoal();
         await _loadTodayFromFirestore();
+        _scheduleMidnightRollover();
         notifyListeners();
       }();
     }
@@ -303,10 +305,14 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
 
     final today = _todayString();
     if (_lastLoadedDate.isNotEmpty && today != _lastLoadedDate) {
+      AppLogger.d(
+        'Walk',
+        'Day changed in step stream: $_lastLoadedDate -> $today',
+      );
       await _loadTodayFromFirestore();
       _lastLoadedDate = today;
-      _lastSensorTotal = event.steps;
-      await _persistLastSensorTotal();
+      _needsImmediateSave = true;
+      _upsertTodayHistory();
     }
 
     final delta = event.steps - _lastSensorTotal;
@@ -427,6 +433,10 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       );
     }
     _lastLoadedDate = _todayString();
+    AppLogger.d(
+      'WalkFirestore',
+      'Today loaded: steps=$_todaySteps goal=${_goal.targetSteps} date=$_lastLoadedDate',
+    );
   }
 
   Future<void> _loadHistory() async {
@@ -509,6 +519,42 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Timer? _midnightTimer;
+
+  void _scheduleMidnightRollover() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final delay = nextMidnight.difference(now);
+    AppLogger.d(
+      'Walk',
+      'Midnight rollover scheduled in ${delay.inMinutes}m ${delay.inSeconds % 60}s',
+    );
+    _midnightTimer = Timer(delay, () {
+      AppLogger.d('Walk', 'Midnight rollover timer fired');
+      _handleMidnightRollover();
+    });
+  }
+
+  Future<void> _handleMidnightRollover() async {
+    if (_auth.currentUser == null || !_trackingStarted) return;
+
+    final today = _todayString();
+    if (_lastLoadedDate == today) {
+      AppLogger.d('Walk', 'Midnight rollover skipped: already on $today');
+      _scheduleMidnightRollover();
+      return;
+    }
+
+    AppLogger.d('Walk', 'Midnight rollover start: $_lastLoadedDate -> $today');
+    await _loadTodayFromFirestore();
+    _lastLoadedDate = today;
+    _needsImmediateSave = true;
+    _upsertTodayHistory();
+    notifyListeners();
+    _scheduleMidnightRollover();
+  }
+
   void _cancelTracking() {
     _stepCountSub?.cancel();
     _stepCountSub = null;
@@ -516,6 +562,8 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     _pedestrianStatusSub = null;
     _saveTimer?.cancel();
     _saveTimer = null;
+    _midnightTimer?.cancel();
+    _midnightTimer = null;
   }
 
   void _upsertTodayHistory() {

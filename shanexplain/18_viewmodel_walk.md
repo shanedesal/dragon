@@ -5,6 +5,8 @@
 > **Added:** 2026-04-30
 > **Related files:** `walk_tab.dart`, `day_steps.dart`, `main.dart`, `19_screen_walk_tab.md`, `17_model_day_steps.md`, `02_core_entry_point.md`
 
+> ⚠️ **Updated [2026-05-06]:** WalkViewModel now schedules a midnight rollover timer that automatically resets the daily step count at the start of each new day. The timer is rescheduled whenever today's data is loaded, so it stays in sync even across app restarts.
+
 ---
 
 ## What is this?
@@ -39,16 +41,18 @@ Without a ViewModel, all this logic would live inside the `WalkTab` widget. That
 3. **Loads user-specific preferences** from `SharedPreferences` (last sensor total and last active user). If the user changed, the ViewModel marks the sensor baseline to reset.
 4. **Loads the step goal** from Firestore first, then falls back to local storage if needed.
 5. **Loads today's steps from Firestore** (the source of truth). This makes sure the screen starts from the server value, not a stale local count.
-6. **Attaches a lifecycle observer** so when the app resumes, it refreshes today's steps and the goal.
-7. **Requests permission** (Android: `ACTIVITY_RECOGNITION`; iOS: motion sensor access via `NSMotionUsageDescription`). If the user says no, `_hasPermission` stays `false` and the pedometer is never started.
-8. **Starts two sensor streams** via the `pedometer` package:
-  - `stepCountStream` — fires a new event with the total step count every time you take a step.
-  - `pedestrianStatusStream` — fires `"walking"` or `"stopped"` as your activity changes.
-9. **Handles step events by delta**. The first sensor value (or a user switch) sets a baseline. After that, the ViewModel adds only the difference between the current sensor total and the last saved sensor total.
-10. **Saves immediately after catch-up**, then every 30 seconds. Each save also updates the local history list so the UI stays fresh.
-11. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
-12. **Auth changes reset tracking**. If the signed-in user changes, the ViewModel clears state and cancels streams so the new user starts clean.
-13. **`dispose()` cancels** both sensor subscriptions, timers, and the lifecycle observer when the ViewModel is discarded, preventing memory leaks.
+6. **Schedules a midnight rollover** so that at the next day's start, the app automatically refreshes today's step count and rolls it into history.
+7. **Attaches a lifecycle observer** so when the app resumes, it refreshes today's steps and the goal.
+8. **Requests permission** (Android: `ACTIVITY_RECOGNITION`; iOS: motion sensor access via `NSMotionUsageDescription`). If the user says no, `_hasPermission` stays `false` and the pedometer is never started.
+9. **Starts two sensor streams** via the `pedometer` package:
+   - `stepCountStream` — fires a new event with the total step count every time you take a step.
+   - `pedestrianStatusStream` — fires `"walking"` or `"stopped"` as your activity changes.
+10. **Handles step events by delta**. The first sensor value (or a user switch) sets a baseline. After that, the ViewModel adds only the difference between the current sensor total and the last saved sensor total.
+11. **Detects day changes** in the step stream. If the date changes mid-session, it loads today's data from Firestore and resets the local history.
+12. **Saves immediately after catch-up**, then every 30 seconds. Each save also updates the local history list so the UI stays fresh.
+13. **`_loadHistory()` queries Firestore** for all documents in the `steps` sub-collection, ordered newest-first (by document ID — since the IDs are `YYYY-MM-DD` strings, alphabetical descending = newest first). Each document becomes a `DaySteps` object.
+14. **Auth changes reset tracking**. If the signed-in user changes, the ViewModel clears state and cancels streams so the new user starts clean.
+15. **`dispose()` cancels** both sensor subscriptions, timers, the midnight rollover timer, and the lifecycle observer when the ViewModel is discarded, preventing memory leaks.
 
 ---
 
@@ -175,11 +179,53 @@ Future<void> initTracking() async {
 
 **What this does:** The user might navigate away from the Walk tab and come back. `WalkTab.initState()` calls `initTracking()` every time the widget mounts. Without this guard, you'd end up with two pedometer listeners running at the same time, both calling `notifyListeners()` and doubling your step count. The `_trackingStarted` flag ensures the setup only ever runs once.
 
+### Midnight rollover scheduling
+
+```dart
+void _scheduleMidnightRollover() {
+  _midnightTimer?.cancel();
+  final now = DateTime.now();
+  final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+  final delay = nextMidnight.difference(now);
+  AppLogger.d(
+    'Walk',
+    'Midnight rollover scheduled in ${delay.inMinutes}m ${delay.inSeconds % 60}s',
+  );
+  _midnightTimer = Timer(delay, () {
+    AppLogger.d('Walk', 'Midnight rollover timer fired');
+    _handleMidnightRollover();
+  });
+}
+
+Future<void> _handleMidnightRollover() async {
+  if (_auth.currentUser == null || !_trackingStarted) return;
+
+  final today = _todayString();
+  if (_lastLoadedDate == today) {
+    AppLogger.d('Walk', 'Midnight rollover skipped: already on $today');
+    _scheduleMidnightRollover();
+    return;
+  }
+
+  AppLogger.d('Walk', 'Midnight rollover start: $_lastLoadedDate -> $today');
+  await _loadTodayFromFirestore();
+  _lastLoadedDate = today;
+  _needsImmediateSave = true;
+  _upsertTodayHistory();
+  notifyListeners();
+  _scheduleMidnightRollover();
+}
+```
+
+**What this does:** At the moment you load today's steps (on app startup or app resume), the ViewModel calculates when the next midnight is and sets a timer. When midnight hits, `_handleMidnightRollover()` checks if the date actually changed by comparing `_lastLoadedDate` with today's date string. If the date did change, it reloads today's data from Firestore (which will be zero steps for the new day), updates the history list (moving yesterday's steps into the history), and reschedules the next midnight timer. This ensures that the step counter resets at midnight automatically, even if the app stays open all night.
+
 ---
 
 ## What to do when you change this file
 
-- [ ] If you change what's saved to Firestore, update the Firestore path description in step 8 of "How does it work?"
+- [ ] If you change what's saved to Firestore, update the Firestore path description in step 10 of "How does it work?"
 - [ ] If you add a new piece of state (e.g. calories, distance), add it to the State section and update the `Key concepts` table.
-- [ ] If you change the save interval (currently 30 seconds), update the description in "How does it work?" step 8.
+- [ ] If you change the save interval (currently 30 seconds), update the description in "How does it work?" step 12.
+- [ ] If the midnight rollover logic changes, update the "Midnight rollover scheduling" section in the code walkthrough.
 - [ ] If you change the Firestore data structure, the history query in `_loadHistory()` may need updating too — reflect that here.
+- [ ] Make sure `_cancelTracking()` cancels the midnight timer if you add or remove any timers.

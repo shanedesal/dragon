@@ -71,6 +71,7 @@ This document traces what happens from the moment a user taps the app icon to th
 
 16. AuthViewModel tries to claim the session lock in Firestore
    └─ If another device owns the lock, the user is signed out and shown an error
+   └─ If the lock claim fails due to network/permission issues, it logs the error and continues anyway (graceful offline support)
 
 17. _AuthNotifier.notifyListeners() is called
    └─ GoRouter re-runs its redirect function
@@ -117,6 +118,7 @@ This document traces what happens from the moment a user taps the app icon to th
 
 10. AuthViewModel tries to claim the session lock in Firestore
    └─ If another device owns the lock, the user is signed out and stays on /login
+   └─ If the lock claim fails due to network/permission issues, it logs the error and continues anyway (graceful offline support)
 
 11. Redirect check:
    - Current path: /login

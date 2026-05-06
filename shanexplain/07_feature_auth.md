@@ -29,7 +29,7 @@ Building your own authentication system from scratch is hard and risky (password
 3. `AuthViewModel` calls `FirebaseAuth.instance.createUserWithEmailAndPassword(email, password)`.
 4. Firebase validates the email format, checks the password is strong enough, and checks no account with that email already exists.
 5. If everything is fine, Firebase creates the account and **automatically logs the user in**.
-6. `AuthViewModel` claims a **session lock** in Firestore to make sure this account is only active on one device.
+6. `AuthViewModel` tries to claim a **session lock** in Firestore to ensure this account is only active on one device. If the lock claim fails due to network or permission issues, the ViewModel logs the error but allows the login to continue anyway (graceful offline support). If another device already owns the lock, the user is signed out and shown an error.
 7. The auth state changes → your app reacts and navigates to home.
 
 ### Logging in
@@ -38,14 +38,14 @@ Building your own authentication system from scratch is hard and risky (password
 3. `AuthViewModel` calls `FirebaseAuth.instance.signInWithEmailAndPassword(email, password)`.
 4. Firebase checks the credentials against its database.
 5. If correct, Firebase issues a session token (a secret key stored locally on the device).
-6. The ViewModel claims a **session lock** in Firestore. If another device already owns the lock, the user is signed out and shown an error.
+6. The ViewModel tries to claim a **session lock** in Firestore. If the lock claim fails due to network or permission issues, the ViewModel logs the error but allows the login to continue anyway (graceful offline support). If another device already owns the lock and the lock claim succeeds, the user is signed out and shown an error.
 7. The auth state changes → your app reacts and navigates to home.
 
 ### Staying logged in
 - Firebase stores the session token on the device. Next time the app opens, Firebase automatically restores the session — the user doesn't have to log in again.
 - `FirebaseAuth.instance.currentUser` returns the user if still logged in, or `null` if not.
 - `authStateChanges()` is a live stream that emits an event whenever login state changes (logged in, logged out).
-- The app also refreshes the **session lock** every 30 seconds. If the lock is taken by another device, the user is logged out.
+- The app also tries to refresh the **session lock** every 30 seconds (the heartbeat). If the lock refresh fails due to network or permission issues, it logs the error but continues anyway. If the lock is taken by another device, the user is logged out.
 
 ### Logging out
 1. User opens the `ProfileDrawer` (by tapping the avatar button in the top-left corner) and taps "Logout."
