@@ -75,11 +75,13 @@ class FoodTab extends StatelessWidget {
                     ),
                     if (vm.dailyEntries.isEmpty)
                       SliverFillRemaining(
+                        hasScrollBody: false,
                         child: _EmptyFoodState(
                           onAddPressed: () => AddFoodModal.show(context),
+                          bottomPadding: 80,
                         ),
                       )
-                    else
+                    else ...[
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
                         sliver: SliverList(
@@ -95,7 +97,8 @@ class FoodTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 80)), // FAB padding
+                      const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                    ],
                   ],
                 ),
               ),
@@ -111,56 +114,65 @@ class FoodTab extends StatelessWidget {
 
 class _EmptyFoodState extends StatelessWidget {
   final VoidCallback onAddPressed;
+  final double bottomPadding;
 
-  const _EmptyFoodState({required this.onAddPressed});
+  const _EmptyFoodState({
+    required this.onAddPressed,
+    this.bottomPadding = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(203, 166, 247, 0.12),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color.fromRGBO(203, 166, 247, 0.2)),
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(203, 166, 247, 0.12),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: const Color.fromRGBO(203, 166, 247, 0.2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: CatppuccinMocha.mauve,
+                  size: 34,
+                ),
               ),
-              child: const Icon(
-                Icons.restaurant_menu_rounded,
-                color: CatppuccinMocha.mauve,
-                size: 34,
+              const SizedBox(height: 16),
+              const Text(
+                'No food logged yet',
+                style: TextStyle(
+                  color: CatppuccinMocha.text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No food logged yet',
-              style: TextStyle(
-                color: CatppuccinMocha.text,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 6),
+              const Text(
+                'Start tracking your meals and macros.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: CatppuccinMocha.subtext0,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Start tracking your meals and macros.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: CatppuccinMocha.subtext0,
-                fontSize: 13,
+              const SizedBox(height: 18),
+              TextButton.icon(
+                onPressed: onAddPressed,
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                label: const Text('Log your first meal'),
               ),
-            ),
-            const SizedBox(height: 18),
-            TextButton.icon(
-              onPressed: onAddPressed,
-              icon: const Icon(Icons.add_circle_outline_rounded),
-              label: const Text('Log your first meal'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
