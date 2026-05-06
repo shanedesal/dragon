@@ -181,8 +181,22 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       AppLogger.d('Walk', 'User switch detected, resetting sensor baseline');
     }
 
+    final today = _todayString();
+    final lastSensorDate =
+        _prefs?.getString(_userKey(uid, 'last_sensor_date')) ?? '';
+    final dayChanged = lastSensorDate.isNotEmpty && lastSensorDate != today;
+    if (dayChanged) {
+      _resetLastSensorOnNextEvent = true;
+      AppLogger.d(
+        'Walk',
+        'Day changed, resetting sensor baseline: '
+            'last=$lastSensorDate today=$today',
+      );
+    }
+
+    final shouldReset = _resetLastSensorOnNextEvent || dayChanged;
     final lastTotal = _prefs?.getInt(_userKey(uid, 'last_sensor_total'));
-    if (lastTotal != null) {
+    if (lastTotal != null && !shouldReset) {
       _lastSensorTotal = lastTotal;
       _hasLastSensorTotal = true;
     } else {
