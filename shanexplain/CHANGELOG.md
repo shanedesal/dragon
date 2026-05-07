@@ -27,6 +27,22 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-07] — Food autofill API integration and environment variables
+
+**Code changed:** `lib/main.dart`, `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `pubspec.yaml`, `.env`, `.gitignore`
+**Docs updated:** `01_core_structure.md`, `02_core_entry_point.md`, `22_viewmodel_food.md`, `23_model_food_data.md`, `24_feature_food.md`
+**Type:** update
+
+The food entry system now includes autofill functionality that calls an external nutrition API to automatically populate food macros. The app loads environment variables (API URL and key) from a `.env` file at startup using `flutter_dotenv`. The `FoodEntry` model now supports flexible timestamp parsing to handle Firestore Timestamps, ISO8601 strings, or defaults to the current time. New packages `http` and `flutter_dotenv` were added to dependencies. Docs were updated to explain how environment variables work, the autofill flow through the ViewModel and Repository, and the new timestamp parsing logic.
+
+### [2026-05-06] — Food tab path sync and autofill button note
+
+**Code changed:** `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/food_tab.dart`, `lib/shell/main_shell.dart`
+**Docs updated:** `21_screen_food_tab.md`, `06_screen_home.md`
+**Type:** update
+
+The Food tab now lives under the food feature folder instead of the old home folder, so the docs point at the new file path. The add-food panel also has a new autofill button in its header, and the Food tab doc now explains that it is just a placeholder for now.
+
 ### [2026-05-06] — Session lock resilience, midnight auto-refresh, and day rollover
 
 **Code changed:** `lib/features/auth/viewmodels/auth_viewmodel.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `lib/features/walk/viewmodels/walk_viewmodel.dart`

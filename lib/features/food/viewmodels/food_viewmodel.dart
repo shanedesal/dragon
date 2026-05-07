@@ -16,6 +16,8 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  bool _isAutoFilling = false;
+  bool get isAutoFilling => _isAutoFilling;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -228,5 +230,25 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
       _observerAttached = false;
     }
     super.dispose();
+  }
+
+  Future<FoodEntry?> autoFillFoodEntry(FoodEntry entry) async {
+    _isAutoFilling = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      AppLogger.d('FoodViewModel', 'Auto-filling food entry: ${entry.name}');
+      final autoFilledEntry = await _repository.autoFillFoodEntry(entry);
+      AppLogger.d('FoodViewModel', 'Auto-fill successful: ${entry.name}');
+      return autoFilledEntry;
+    } catch (e, stack) {
+      _errorMessage = 'Failed to auto-fill food entry: $e';
+      AppLogger.d('FoodViewModel', _errorMessage!, error: e, stackTrace: stack);
+      return null;
+    } finally {
+      _isAutoFilling = false;
+      notifyListeners();
+    }
   }
 }

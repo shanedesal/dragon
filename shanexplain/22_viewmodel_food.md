@@ -39,6 +39,7 @@ Without a ViewModel, the Food tab would have to handle data loading and Firestor
 12. When midnight rolls over (the day changes), the timer fires → `_refreshForMidnight()` checks if the date changed, and if so, refreshes all data.
 13. Every change ends with `notifyListeners()` so the UI rebuilds with the latest data.
 14. When the ViewModel is disposed (app closes or the provider is torn down), it cancels the midnight timer and removes the lifecycle observer.
+15. `autoFillFoodEntry(...)` takes a partially-filled `FoodEntry` (name and quantity only) and asks the repository to call an external API that auto-fills the nutrition data. It sets `isAutoFilling` to true while the request is pending, and returns the filled entry. If the API call fails, it sets `_errorMessage` and returns null.
 
 ---
 
@@ -49,7 +50,7 @@ Without a ViewModel, the Food tab would have to handle data loading and Firestor
 | `ChangeNotifier` | A base class that lets the ViewModel say "I changed" |
 | `notifyListeners()` | The signal that tells all watching widgets to rebuild |
 | `Future` and `async/await` | A way to run work that takes time, like network calls |
-| Repository | A separate class that is the only place allowed to talk to Firebase |
+| Repository | A separate class that is the only place allowed to talk to Firebase or external APIs |
 | `try/catch` | Error handling so failed network calls do not crash the app |
 | `AppLogger` | A small debug logger used throughout the app |
 | Computed getter | A value like `totalCalories` or `totalProtein` that is calculated from other data |
@@ -57,6 +58,7 @@ Without a ViewModel, the Food tab would have to handle data loading and Firestor
 | `AppLifecycleState.resumed` | The moment the app comes back to the foreground from the background |
 | `Timer` | A one-time or repeating task scheduler. Here, used to refresh at midnight. |
 | `_lastLoadedDate` | Tracks today's date string (YYYY-MM-DD). Used to detect when the day changes. |
+| `isAutoFilling` | A flag that is true while an autofill API request is pending, false when done. Used to disable the button while loading. |
 
 ---
 
@@ -202,6 +204,32 @@ Future<void> addFoodEntry(
 ```
 
 **What this does:** It builds a `FoodEntry` object, sends it to Firestore through the repository, then reloads the list so the new entry appears in the UI.
+
+### Auto-filling a food entry from an external API
+
+```dart
+Future<FoodEntry?> autoFillFoodEntry(FoodEntry entry) async {
+  _isAutoFilling = true;
+  _errorMessage = null;
+  notifyListeners();
+
+  try {
+    AppLogger.d('FoodViewModel', 'Auto-filling food entry: ${entry.name}');
+    final autoFilledEntry = await _repository.autoFillFoodEntry(entry);
+    AppLogger.d('FoodViewModel', 'Auto-fill successful: ${entry.name}');
+    return autoFilledEntry;
+  } catch (e, stack) {
+    _errorMessage = 'Failed to auto-fill food entry: $e';
+    AppLogger.d('FoodViewModel', _errorMessage!, error: e, stackTrace: stack);
+    return null;
+  } finally {
+    _isAutoFilling = false;
+    notifyListeners();
+  }
+}
+```
+
+**What this does:** This method takes a partially-filled `FoodEntry` (with just name and quantity) and sends it to the repository, which calls an external API to look up and fill in the nutrition facts. The `isAutoFilling` flag is set to true at the start so the UI can disable the button during the request. If the API call succeeds, it returns the filled entry; if it fails, it returns null and sets an error message. Either way, `isAutoFilling` is set back to false so the button re-enables.
 
 ---
 

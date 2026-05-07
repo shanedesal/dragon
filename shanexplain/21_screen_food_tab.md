@@ -1,6 +1,6 @@
 # 21 - Food Tab Screen
 
-> **Files:** `lib/features/home/screens/food_tab.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`
+> **Files:** `lib/features/food/screens/food_tab.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/screens/widgets/set_goals_modal.dart`
 > **Category:** screen
 > **Added:** 2026-05-04
 > **Related files:** `food_viewmodel.dart`, `food_repository.dart`, `food_entry.dart`, `daily_goals.dart`, `22_viewmodel_food.md`, `23_model_food_data.md`, `24_feature_food.md`, `06_screen_home.md`, `13_shell_main.md`
@@ -10,6 +10,8 @@
 ## What is this?
 
 The Food tab is a daily food diary with macro tracking (protein, carbs, fat). It shows calorie and protein progress, a macro summary, and a list of meals with their totals.
+
+The add-food panel also includes an autofill button in the header. Right now it is a placeholder for future auto-entry help.
 
 The screen reads everything from `FoodViewModel`, so it never talks to Firestore directly.
 
@@ -32,7 +34,7 @@ Food tracking is a core part of a fitness app. This screen gives the user one si
 7. The macro card shows totals for protein, carbs, and fat for the day.
 8. The entries section either shows an empty state with a "Log your first meal" button or a list of cards, one per `FoodEntry`.
 9. Each entry card shows the name, serving info, macro totals, calories, and time. The delete button calls `vm.deleteFoodEntry(entry.id)`.
-10. Tapping the floating plus button opens `AddFoodModal`. The modal collects quantity, unit, and per-unit macros, shows a live total, then calls `vm.addFoodEntry(...)` on submit.
+10. Tapping the floating plus button opens `AddFoodModal`. The modal collects quantity, unit, and per-unit macros, shows a live total, and includes an autofill button in the header for future automatic filling. Submitting the form calls `vm.addFoodEntry(...)`.
 
 ---
 

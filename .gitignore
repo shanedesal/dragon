@@ -47,3 +47,5 @@ lib/firebase_options.dart
 android/app/google-services.json
 android/local.properties
 ios/Runner/GoogleService-Info.plist
+
+.env

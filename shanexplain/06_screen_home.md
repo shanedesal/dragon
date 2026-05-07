@@ -2,7 +2,7 @@
 
 > ⚠️ **Architecture updated 2026-04-29:** This file was updated to reflect the switch from a single `HomeScreen` to a shell-based layout with a bottom navigation bar, multiple tabs, and a slide-out profile drawer.
 
-> **Files:** `lib/shell/main_shell.dart`, `lib/features/home/screens/home_tab.dart`, `lib/features/home/screens/food_tab.dart`, `lib/features/home/screens/walk_tab.dart`
+> **Files:** `lib/shell/main_shell.dart`, `lib/features/home/screens/home_tab.dart`, `lib/features/food/screens/food_tab.dart`, `lib/features/walk/screens/walk_tab.dart`
 > **Category:** screen
 > **Added:** 2026-04-29
 > **Related files:** `navigation_viewmodel.dart`, `auth_viewmodel.dart`, `profile_drawer.dart`, `13_shell_main.md`, `14_ui_profile_drawer.md`, `19_screen_walk_tab.md`, `21_screen_food_tab.md`, `22_viewmodel_food.md`

@@ -36,8 +36,9 @@ lib/
 │   │   │   ├── daily_goals.dart      ← Daily calorie/protein targets
 │   │   │   └── food_entry.dart       ← One logged food item (name, calories, serving, time)
 │   │   ├── repositories/
-│   │   │   └── food_repository.dart  ← Firestore reads/writes for food entries and goals
+│   │   │   └── food_repository.dart  ← Firestore and API integration for food entries and goals
 │   │   ├── screens/
+│   │   │   ├── food_tab.dart         ← The "Food" tab content (progress card, entry list, add button)
 │   │   │   └── widgets/
 │   │   │       ├── add_food_modal.dart  ← Bottom sheet for adding a food entry
 │   │   │       └── set_goals_modal.dart ← Bottom sheet for editing daily goals
@@ -48,7 +49,6 @@ lib/
 │   │   │   └── day_steps.dart       ← Data container for one day's step count (date, steps, goal)
 │   │   ├── screens/
 │   │   │   ├── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
-│   │   │   ├── food_tab.dart        ← The "Food" tab content (progress card, entry list, add button)
 │   │   │   └── walk_tab.dart        ← The "Walk" tab: step ring, goal card, and history list
 │   │   └── viewmodels/
 │   │       └── walk_viewmodel.dart  ← The brain behind step counting, permission, and Firestore sync
@@ -126,3 +126,9 @@ A list of files/folders that should **NOT** be uploaded to GitHub. Things like:
 - Personal editor settings
 
 This `shanexplain/` folder is **not** in `.gitignore`, so it will be included when you push to GitHub.
+
+---
+
+## The `.env` File
+
+Contains secret configuration values like API keys and URLs. **Never commit this to GitHub** — it's in `.gitignore` for a reason. Each developer should have their own `.env` file with their own API keys. The app loads this file at startup using `flutter_dotenv`.

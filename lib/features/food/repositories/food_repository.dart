@@ -5,9 +5,12 @@
 // ------------------------------------------------------------------
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../shared/utils/app_logger.dart';
 import '../models/food_entry.dart';
 import '../models/daily_goals.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class FoodRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -204,6 +207,30 @@ class FoodRepository {
         stackTrace: st,
       );
       rethrow;
+    }
+  }
+
+  Future<FoodEntry> autoFillFoodEntry(FoodEntry entry) async {
+    final apiUrl = dotenv.get('AUTOFILLURL');
+    final apiKey = dotenv.get('AUTOFILLKEY');
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: jsonEncode({
+        ...entry.toJson(),
+        'timestamp': DateTime.now().toIso8601String(),
+      }),
+    );
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return FoodEntry.fromJson(json, entry.id);
+    } else {
+      throw Exception(
+        'Failed to auto-fill food entry: ${response.statusCode} ${response.body}',
+      );
     }
   }
 }

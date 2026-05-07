@@ -15,12 +15,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   AppLogger.d('App', 'Bootstrapping');
   WidgetsFlutterBinding.ensureInitialized();
   AppLogger.d('App', 'Firebase initialize start');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await dotenv.load(fileName: '.env');
   AppLogger.d('App', 'Firebase initialize done');
   runApp(
     MultiProvider(

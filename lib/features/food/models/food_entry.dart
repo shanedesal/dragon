@@ -76,7 +76,11 @@ class FoodEntry {
       totalProtein: totalProtein,
       totalCarbs: totalCarbs,
       totalFat: totalFat,
-      timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      timestamp: json['timestamp'] is Timestamp
+          ? (json['timestamp'] as Timestamp).toDate()
+          : json['timestamp'] is String
+          ? DateTime.parse(json['timestamp'] as String)
+          : DateTime.now(),
     );
   }
 

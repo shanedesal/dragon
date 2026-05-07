@@ -17,6 +17,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   AppLogger.d('App', 'Firebase initialize done');
+  await dotenv.load(fileName: '.env');
   runApp(
     MultiProvider(
       providers: [
@@ -37,12 +38,13 @@ void main() async {
 2. `AppLogger.d(...)` — Writes debug-only messages so you can see the boot process in the console. These logs do nothing in release builds.
 3. `WidgetsFlutterBinding.ensureInitialized()` — Makes sure Flutter's internal engine is ready before you do anything else. Required whenever you do something before `runApp`.
 4. `await Firebase.initializeApp(...)` — Connects the app to your Firebase project in the cloud. The `await` means "wait here until this is done before continuing."
-5. `MultiProvider(providers: [...], child: const MyApp())` — Sets up **four** shared state managers at the very top of the app. Think of it like four bulletin boards hung at the entrance of the building — every room inside can read from any of them.
+5. `await dotenv.load(fileName: '.env')` — Loads environment variables (like API keys and URLs) from a `.env` file into the app. This keeps secrets out of the source code. Features like food autofill use these values to call external APIs safely.
+6. `MultiProvider(providers: [...], child: const MyApp())` — Sets up **four** shared state managers at the very top of the app. Think of it like four bulletin boards hung at the entrance of the building — every room inside can read from any of them.
    - `AuthViewModel` — manages all login/register/logout logic and the current user.
    - `NavigationViewModel` — tracks which bottom navigation tab is currently selected.
    - `WalkViewModel` — manages step counting, daily step goal, and step history. Registered here so the Walk tab can access it via `context.watch`/`context.read`.
   - `FoodViewModel` — manages food entries and daily calorie/protein goals. Registered here so the Food tab can access it via `context.watch`/`context.read`.
-6. `runApp(...)` — Hands control to your `MyApp` widget, which is the root of everything the user sees.
+7. `runApp(...)` — Hands control to your `MyApp` widget, which is the root of everything the user sees.
 
 > **What is `MultiProvider`?** It's just a convenience wrapper that lets you register multiple providers at once instead of nesting them inside each other. Same result, cleaner code.
 

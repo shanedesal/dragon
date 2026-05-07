@@ -4,10 +4,12 @@
 // Description: A bottom sheet UI for users to punch in a new food.
 // ------------------------------------------------------------------
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import '../../../../shared/utils/app_logger.dart';
 import '../../../../theme/app_theme.dart';
 import '../../viewmodels/food_viewmodel.dart';
+import '../../models/food_entry.dart';
 
 class AddFoodModal extends StatefulWidget {
   const AddFoodModal({super.key});
@@ -41,7 +43,6 @@ class _AddFoodModalState extends State<AddFoodModal> {
     'serving',
     'piece',
     'cup',
-    'egg',
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -102,6 +103,94 @@ class _AddFoodModalState extends State<AddFoodModal> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _autoFill() async {
+  final name = _nameController.text.trim();
+  final quantity = _parseInt(_quantityController.text);
+
+  if (name.isEmpty || quantity <= 0) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: const Text(
+          'Enter a food name before auto-filling and include number of servings if possible (e.g. "2 eggs", "150g chicken").',
+          style: TextStyle(
+            color: CatppuccinMocha.text,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: CatppuccinMocha.mauve)),
+          ),
+        ],
+      ),
+    );
+    AppLogger.d('FoodUI', 'Autofill failed: empty name / invalid quantity');
+    return;
+  }
+
+  final entry = FoodEntry(
+    id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+    name: name,
+    quantity: quantity,
+    unit: _selectedUnit,
+    caloriesPerUnit: 0,
+    proteinPerUnit: 0,
+    carbsPerUnit: 0,
+    fatPerUnit: 0,
+    totalCalories: 0,
+    totalProtein: 0,
+    totalCarbs: 0,
+    totalFat: 0,
+    timestamp: DateTime.now(),
+  );
+
+  final autoFilledEntry = await context.read<FoodViewModel>().autoFillFoodEntry(entry);
+  AppLogger.d('FoodUI', 'Autofill requested for "$name"');
+
+  if (!mounted) return;
+
+  if (autoFilledEntry == null) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: const Text(
+          'Sorry, no data found for that food. Try being more specific (e.g. "2 eggs", "150g chicken").',
+          style: TextStyle(
+            color: CatppuccinMocha.text,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: CatppuccinMocha.mauve)),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    _caloriesPerUnitController.text = autoFilledEntry.caloriesPerUnit.toString();
+    _proteinPerUnitController.text = autoFilledEntry.proteinPerUnit.toString();
+    _carbsPerUnitController.text = autoFilledEntry.carbsPerUnit.toString();
+    _fatPerUnitController.text = autoFilledEntry.fatPerUnit.toString();
+    AppLogger.d(
+      'FoodUI',
+      'Autofill successful for "$name": '
+          '${autoFilledEntry.caloriesPerUnit} kcal/unit, '
+          '${autoFilledEntry.proteinPerUnit} g protein/unit, '
+          '${autoFilledEntry.carbsPerUnit} g carbs/unit, '
+          '${autoFilledEntry.fatPerUnit} g fat/unit',
+    );
+  });
+}
+
   @override
   Widget build(BuildContext context) {
     final quantity = _parseInt(_quantityController.text);
@@ -122,14 +211,37 @@ class _AddFoodModalState extends State<AddFoodModal> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Log Food',
-              style: TextStyle(
-                color: CatppuccinMocha.text,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                const Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Log Food',
+                    style: TextStyle(
+                      color: CatppuccinMocha.text,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: context.watch<FoodViewModel>().isAutoFilling ? null 
+                    : _autoFill,
+                    icon: SvgPicture.asset(
+                      'assets/images/auto_fill.svg',
+                      height: 24,
+                      width: 24,
+                      colorFilter: const ColorFilter.mode(
+                        CatppuccinMocha.mauve,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             TextFormField(

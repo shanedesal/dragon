@@ -29,9 +29,10 @@ Raw Firestore data is just a map of key and value pairs. Using small model class
 1. When Firestore returns a document, `fromJson` converts it into a Dart object.
 2. `FoodEntry.fromJson` reads quantity, unit, and totals. If older fields like `servingSize` or `calories` exist, it still accepts them for backward compatibility.
 3. If per-unit values are missing, it calculates them from totals and quantity.
-4. `FoodEntry.toJson` turns the object back into a map so Firestore can save it.
-5. `DailyGoals.fromJson` reads `targetCalories` and `targetProtein`, with default values if the doc is missing.
-6. `DailyGoals.toJson` writes those goals back to Firestore.
+4. The timestamp is parsed flexibly — it can be a Firestore `Timestamp` (converted to `DateTime`), an ISO8601 string (parsed directly), or defaults to the current time if missing.
+5. `FoodEntry.toJson` turns the object back into a map so Firestore can save it.
+6. `DailyGoals.fromJson` reads `targetCalories` and `targetProtein`, with default values if the doc is missing.
+7. `DailyGoals.toJson` writes those goals back to Firestore.
 
 ---
 
@@ -65,6 +66,13 @@ factory FoodEntry.fromJson(Map<String, dynamic> json, String id) {
   final caloriesPerUnit = json['caloriesPerUnit'] as int?
       ?? (quantity > 0 ? (totalCalories / quantity).round() : 0);
 
+  // Flexible timestamp parsing for Firestore Timestamp, ISO8601 string, or default
+  final parsedTimestamp = json['timestamp'] is Timestamp
+      ? (json['timestamp'] as Timestamp).toDate()
+      : json['timestamp'] is String
+      ? DateTime.parse(json['timestamp'] as String)
+      : DateTime.now();
+
   return FoodEntry(
     id: id,
     name: json['name'] as String? ?? '',
@@ -78,7 +86,7 @@ factory FoodEntry.fromJson(Map<String, dynamic> json, String id) {
     totalProtein: json['totalProtein'] as int? ?? 0,
     totalCarbs: json['totalCarbs'] as int? ?? 0,
     totalFat: json['totalFat'] as int? ?? 0,
-    timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    timestamp: parsedTimestamp,
   );
 }
 
