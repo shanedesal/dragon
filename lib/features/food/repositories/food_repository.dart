@@ -3,14 +3,17 @@
 // Feature: Food
 // Description: Centralizes all Firebase Firestore calls for the food tracker.
 // ------------------------------------------------------------------
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../../../shared/utils/app_logger.dart';
-import '../models/food_entry.dart';
-import '../models/daily_goals.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../shared/utils/app_logger.dart';
+import '../models/daily_goals.dart';
+import '../models/food_entry.dart';
 
 class FoodRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -93,6 +96,51 @@ class FoodRepository {
       AppLogger.d(
         'FoodRepository',
         'getDailyFoodEntries Firestore query failed',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  Future<List<FoodEntry>> getFoodCatalogEntries() async {
+    if (_uid == null) {
+      AppLogger.d(
+        'FoodRepository',
+        'getFoodCatalogEntries failed: no authenticated user',
+      );
+      throw Exception('User not logged in');
+    }
+
+    AppLogger.d('FoodRepository', 'Fetching food catalog for uid=$_uid');
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(_uid)
+          .collection('food_entries')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      final catalogByName = <String, FoodEntry>{};
+      for (final doc in snapshot.docs) {
+        final entry = FoodEntry.fromJson(doc.data(), doc.id);
+        final key = _catalogKey(entry.name);
+        if (key.isEmpty || catalogByName.containsKey(key)) {
+          continue;
+        }
+        catalogByName[key] = entry;
+      }
+
+      final catalog = catalogByName.values.toList();
+      AppLogger.d(
+        'FoodRepository',
+        'Food catalog loaded: ${catalog.length} unique foods',
+      );
+      return catalog;
+    } catch (e, st) {
+      AppLogger.d(
+        'FoodRepository',
+        'getFoodCatalogEntries Firestore query failed',
         error: e,
         stackTrace: st,
       );
@@ -211,26 +259,43 @@ class FoodRepository {
   }
 
   Future<FoodEntry> autoFillFoodEntry(FoodEntry entry) async {
-    final apiUrl = dotenv.get('AUTOFILLURL');
-    final apiKey = dotenv.get('AUTOFILLKEY');
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: jsonEncode({
-        ...entry.toJson(),
-        'timestamp': DateTime.now().toIso8601String(),
-      }),
-    );
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      return FoodEntry.fromJson(json, entry.id);
-    } else {
-      throw Exception(
-        'Failed to auto-fill food entry: ${response.statusCode} ${response.body}',
-      );
+    final String apiUrl;
+    final String apiKey;
+    try {
+      apiUrl = dotenv.get('AUTOFILLURL');
+      apiKey = dotenv.get('AUTOFILLKEY');
+    } catch (_) {
+      throw Exception('Autofill is not configured. Missing .env keys.');
     }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(apiUrl),
+            headers: {'Content-Type': 'application/json', 'x-api-key': apiKey},
+            body: jsonEncode({
+              ...entry.toJson(),
+              'timestamp': DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return FoodEntry.fromJson(json, entry.id);
+      } else {
+        AppLogger.d(
+          'FoodRepository',
+          'Autofill API error: status=${response.statusCode}',
+        );
+        throw Exception('Autofill failed (server error ${response.statusCode}).');
+      }
+    } on TimeoutException {
+      throw Exception('Autofill timed out. Please try again.');
+    }
+  }
+
+  String _catalogKey(String name) {
+    return name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }

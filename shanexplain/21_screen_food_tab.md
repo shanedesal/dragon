@@ -30,11 +30,11 @@ Food tracking is a core part of a fitness app. This screen gives the user one si
 3. If the ViewModel is loading and there are no entries yet, the tab shows a centered spinner.
 4. The main body is a `CustomScrollView` wrapped in a `RefreshIndicator`. Pulling down logs a debug line and calls `vm.fetchFoodData()` to reload goals and entries.
 5. If `vm.errorMessage` is not null, an `ErrorBannerWidget` appears at the top.
-6. The summary card shows calories and protein progress, plus how much is left for each goal. The pencil icon opens `SetGoalsModal` to edit goals.
-7. The macro card shows totals for protein, carbs, and fat for the day.
+6. **`_SummaryCard`** is a dedicated widget that shows calories and protein progress, plus how much is left for each goal. The pencil icon opens `SetGoalsModal` to edit goals.
+7. **`_MacroCard`** is a dedicated widget that shows totals for protein, carbs, and fat for the day.
 8. The entries section either shows an empty state with a "Log your first meal" button or a list of cards, one per `FoodEntry`.
 9. Each entry card shows the name, serving info, macro totals, calories, and time. The delete button calls `vm.deleteFoodEntry(entry.id)`.
-10. Tapping the floating plus button opens `AddFoodModal`. The modal collects quantity, unit, and per-unit macros, shows a live total, and includes an autofill button in the header for future automatic filling. Submitting the form calls `vm.addFoodEntry(...)`.
+10. Tapping the floating plus button opens `AddFoodModal`. The modal collects quantity, unit, and per-unit macros, shows a live total, and includes an autofill button in the header. Submitting the form calls `vm.addFoodEntry(...)`.
 
 ---
 
@@ -73,35 +73,35 @@ child: vm.isLoading && vm.dailyEntries.isEmpty
 
 **What this does:** If the ViewModel is still loading and there are no entries yet, the screen shows a spinner instead of empty UI. Once data is ready, the `RefreshIndicator` wraps the scroll view so a pull-down gesture reloads the food data.
 
-### The summary progress
+### The summary card (Extracted Widget)
 
 ```dart
-final calorieProgress =
-    calorieGoal > 0 ? vm.totalCalories / calorieGoal : 0.0;
-final proteinProgress =
-    proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
-
-_ProgressRow(
-  label: 'Calories',
-  current: vm.totalCalories,
-  goal: calorieGoal,
-  progress: calorieProgress,
-  color: calorieProgress >= 1.0
-      ? CatppuccinMocha.red
-      : CatppuccinMocha.mauve,
-  unit: 'kcal',
-),
-_ProgressRow(
-  label: 'Protein',
-  current: vm.totalProtein,
-  goal: proteinGoal,
-  progress: proteinProgress,
-  color: CatppuccinMocha.blue,
-  unit: 'g',
-),
+class _SummaryCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final calorieProgress = calorieGoal > 0 ? vm.totalCalories / calorieGoal : 0.0;
+    ...
+    return Container(
+      ...
+      child: Column(
+        children: [
+          _ProgressRow(
+            label: 'Calories',
+            current: vm.totalCalories,
+            goal: calorieGoal,
+            progress: calorieProgress,
+            color: calorieProgress >= 1.0 ? CatppuccinMocha.red : CatppuccinMocha.mauve,
+            unit: 'kcal',
+          ),
+          ...
+        ],
+      ),
+    );
+  }
+}
 ```
 
-**What this does:** The summary card now tracks both calories and protein. Each `_ProgressRow` clamps its progress so the bar never overflows. Calories switch to red when you go over the goal.
+**What this does:** The summary card was moved from a messy function into its own `StatelessWidget` class. This makes the code easier to maintain and helps Flutter's performance. Each `_ProgressRow` inside it tracks progress and switches to red if you go over your calorie goal.
 
 ### The live totals preview
 
@@ -125,4 +125,4 @@ Text(
 - [ ] Update the step list if you add or remove a section of the screen
 - [ ] Update the key concepts table if you add a new widget or package
 - [ ] Update the walkthrough snippets if the loading gate or progress math changes
-- [ ] If you add new modals, document them here and link to them in Related files
+- [ ] If you add new modals, document them here and link to them in Related files files

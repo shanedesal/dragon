@@ -24,13 +24,14 @@ Keeping Firebase calls in a single repository keeps the rest of the app clean. S
 ## How does it work? (Step by step)
 
 1. The repository checks the current user ID from `FirebaseAuth`. If there is no user, it throws an error.
-2. `addFoodEntry` writes a new document to `users/{uid}/food_entries` using `FoodEntry.toJson()` (including quantity, unit, and macro totals).
-3. `getDailyFoodEntries` queries only the current day by filtering the `timestamp` field between the start and end of today. Results are sorted newest first.
-4. `getDailyGoals` reads `users/{uid}/goals/daily_food`. If the doc is missing, it returns defaults from `DailyGoals`.
-5. `setDailyGoals` writes back to the same goals document using `SetOptions(merge: true)` so it does not wipe other fields.
+2. `addFoodEntry` writes a new document to `users/{uid}/food_entries` using `FoodEntry.toJson()`.
+3. `getDailyFoodEntries` queries only the current day by filtering the `timestamp` field.
+4. `getDailyGoals` reads `users/{uid}/goals/daily_food`.
+5. `setDailyGoals` writes back to the same goals document using `SetOptions(merge: true)`.
 6. `deleteFoodEntry` removes a single entry document by its ID.
-7. `autoFillFoodEntry` takes a partially-filled `FoodEntry` and sends an HTTP POST request to an external nutrition API (using URL and API key from environment variables loaded by `flutter_dotenv`). The API returns nutrition data for the food, which is converted back to a `FoodEntry` and returned.
-8. Every call is wrapped in `try/catch` and logs debug messages through `AppLogger`.
+7. **`autoFillFoodEntry`** takes a partially-filled `FoodEntry` and sends it to an external nutrition API. The call now includes a **10-second timeout** so it doesn't hang forever, and it returns a sanitized error if something goes wrong.
+8. The **`AddFoodModal`** was refactored into **6 smaller widgets** (`_ModalHeader`, `_CatalogBanner`, `_CatalogSection`, `_CatalogTile`, `_MacroFields`, and `_TotalsPreview`) to keep the code clean and manageable.
+9. Every call is wrapped in `try/catch` and logs debug messages through `AppLogger`.
 
 ---
 
@@ -40,14 +41,11 @@ Keeping Firebase calls in a single repository keeps the rest of the app clean. S
 |---------|-----------------------|
 | `FirebaseAuth` | The service that tells you who is logged in |
 | `FirebaseFirestore` | The cloud database used by this app |
-| Collection and document paths | The "folders" and "files" inside Firestore |
-| `Timestamp` | Firestore's date type for queries and sorting |
 | `SetOptions(merge: true)` | Write data without deleting other fields in the same doc |
-| `try/catch` | Error handling so a failed write does not crash the app |
 | `AppLogger` | A small debug logger used to trace writes and reads |
-| HTTP POST request | A web request that sends data to an external server and waits for a response |
-| Environment variables | Secret configuration values (like API keys) loaded from `.env` and kept out of source code |
-| `dotenv` | A package that loads environment variables from a `.env` file into the app |
+| HTTP POST request | A web request that sends data to an external server |
+| Environment variables | Secret configuration values loaded from `.env` |
+| `.timeout(Duration)` | Tells the app: "Stop waiting and throw an error if the server doesn't reply in X seconds" |
 
 ---
 
@@ -64,43 +62,33 @@ final snapshot = await _firestore
     .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
     .orderBy('timestamp', descending: true)
     .get();
-
-final entries = snapshot.docs
-    .map((doc) => FoodEntry.fromJson(doc.data(), doc.id))
-    .toList();
 ```
 
 **What this does:** It limits the query to today, orders the results newest first, and converts each Firestore document into a `FoodEntry` object.
 
-### Auto-fill a food entry from an external API
+### Auto-fill with Timeout and Safety
 
 ```dart
-Future<FoodEntry> autoFillFoodEntry(FoodEntry entry) async {
-  final apiUrl = dotenv.get('AUTOFILLURL');
-  final apiKey = dotenv.get('AUTOFILLKEY');
-  final response = await http.post(
-    Uri.parse(apiUrl),
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-    },
-    body: jsonEncode({
-      ...entry.toJson(),
-      'timestamp': DateTime.now().toIso8601String(),
-    }),
-  );
+try {
+  final response = await http
+      .post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json', 'x-api-key': apiKey},
+        body: jsonEncode({ ... }),
+      )
+      .timeout(const Duration(seconds: 10));
+
   if (response.statusCode == 200) {
-    final json = jsonDecode(response.body);
-    return FoodEntry.fromJson(json, entry.id);
+    return FoodEntry.fromJson(jsonDecode(response.body), entry.id);
   } else {
-    throw Exception(
-      'Failed to auto-fill food entry: ${response.statusCode} ${response.body}',
-    );
+    throw Exception('Autofill failed (server error ${response.statusCode}).');
   }
+} on TimeoutException {
+  throw Exception('Autofill timed out. Please try again.');
 }
 ```
 
-**What this does:** The method retrieves the nutrition API's URL and API key from environment variables (managed by `flutter_dotenv`). It builds an HTTP POST request with the food entry data and sends it to the external API. If the response is successful (status code 200), it parses the JSON response and converts it back to a `FoodEntry`. If the API returns an error, it throws an exception with the error details. The ViewModel catches this exception and shows an error message to the user.
+**What this does:** This method sends a request to an external API. The `.timeout(const Duration(seconds: 10))` is like setting a stopwatch — if the API doesn't answer in 10 seconds, it stops trying and throws a "timed out" error. Also, if the server returns an error, we now show a **sanitized message** like "server error 500" instead of leaking the entire messy technical error report to the user.
 
 ---
 
@@ -109,5 +97,4 @@ Future<FoodEntry> autoFillFoodEntry(FoodEntry entry) async {
 - [ ] Update the Firestore paths here if you rename collections or documents
 - [ ] Update `23_model_food_data.md` if you add or rename fields
 - [ ] If you add new repository methods, document them in this file
-- [ ] If the autofill API endpoint changes, update the method and this walkthrough
 - [ ] If you add or remove environment variables, update `.env` and remind team members to also update their local `.env`

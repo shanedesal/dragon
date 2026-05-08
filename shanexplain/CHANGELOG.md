@@ -27,6 +27,14 @@ _(Entries appear newest-first.)_
 
 <!-- NEW ENTRIES GO HERE -->
 
+### [2026-05-08] — Architectural Refactor & Code Review
+
+**Code changed:** `lib/features/walk/repositories/walk_repository.dart` (new), `lib/features/walk/viewmodels/walk_viewmodel.dart`, `lib/features/walk/screens/walk_tab.dart`, `lib/features/food/screens/food_tab.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/shell/main_shell.dart`
+**Docs updated:** `01_core_structure.md`, `13_shell_main.md`, `18_viewmodel_walk.md`, `19_screen_walk_tab.md`, `21_screen_food_tab.md`, `24_feature_food.md`
+**Type:** architecture
+
+Performed a major code review and refactoring session. Extracted Firestore logic from `WalkViewModel` into a new `WalkRepository` to align with the project's repository pattern. Refactored `FoodTab` and `AddFoodModal` by extracting large build methods into dedicated `StatelessWidget` classes for better modularity. Implemented a 10s timeout and error sanitization for the food autofill API call, and fixed an async gap bug in the walk goal dialog. Theming was also standardized by replacing hardcoded colors with `CatppuccinMocha` palette references across the feature screens.
+
 ### [2026-05-07] — Food autofill API integration and environment variables
 
 **Code changed:** `lib/main.dart`, `lib/features/food/models/food_entry.dart`, `lib/features/food/repositories/food_repository.dart`, `lib/features/food/screens/widgets/add_food_modal.dart`, `lib/features/food/viewmodels/food_viewmodel.dart`, `pubspec.yaml`, `.env`, `.gitignore`

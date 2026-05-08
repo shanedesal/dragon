@@ -1,3 +1,9 @@
+// ------------------------------------------------------------------
+// File: main_shell.dart
+// Feature: Shell
+// Description: Root scaffold that owns the bottom navigation bar and
+//              switches between the Home, Food, and Walk tabs.
+// ------------------------------------------------------------------
 import 'package:dragon/features/food/screens/food_tab.dart';
 import 'package:dragon/features/home/screens/home_tab.dart';
 import 'package:dragon/features/walk/screens/walk_tab.dart';
@@ -122,7 +128,7 @@ class _ProfileAvatarButton extends StatelessWidget {
       onPressed: () => Scaffold.of(context).openDrawer(),
       icon: CircleAvatar(
         radius: 14,
-        backgroundColor: Color.fromRGBO(203, 166, 247, 0.2),
+        backgroundColor: CatppuccinMocha.mauve.withValues(alpha: 0.2),
         child: Text(
           initial,
           style: const TextStyle(

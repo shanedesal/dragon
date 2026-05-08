@@ -25,6 +25,9 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
   List<FoodEntry> _dailyEntries = [];
   List<FoodEntry> get dailyEntries => _dailyEntries;
 
+  List<FoodEntry> _catalogEntries = [];
+  List<FoodEntry> get catalogEntries => _catalogEntries;
+
   DailyGoals _dailyGoals = DailyGoals(targetCalories: 2000, targetProtein: 100);
   DailyGoals get dailyGoals => _dailyGoals;
 
@@ -54,17 +57,7 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     try {
-      AppLogger.d(
-        'FoodViewModel',
-        'Fetching food data (reason=$reason date=${_todayString()})',
-      );
-      _dailyGoals = await _repository.getDailyGoals();
-      _dailyEntries = await _repository.getDailyFoodEntries();
-      _lastLoadedDate = _todayString();
-      AppLogger.d(
-        'FoodViewModel',
-        'Fetched ${_dailyEntries.length} entries for $_lastLoadedDate',
-      );
+      await _refreshFoodData(reason: reason);
     } catch (e, stack) {
       _errorMessage = 'Failed to load food data: $e';
       AppLogger.d('FoodViewModel', _errorMessage!, error: e, stackTrace: stack);
@@ -116,9 +109,7 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
       );
 
       await _repository.addFoodEntry(entry);
-      // Refresh list after adding
-      _dailyEntries = await _repository.getDailyFoodEntries();
-      _lastLoadedDate = _todayString();
+      await _refreshFoodData(reason: 'add');
       AppLogger.d('FoodViewModel', 'Food entry added successfully.');
     } catch (e, stack) {
       _errorMessage = 'Failed to add food entry: $e';
@@ -163,8 +154,7 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
     try {
       AppLogger.d('FoodViewModel', 'Deleting food entry: $entryId');
       await _repository.deleteFoodEntry(entryId);
-      // Remove from local list to avoid a full fetch if possible, or just re-fetch
-      _dailyEntries.removeWhere((entry) => entry.id == entryId);
+      await _refreshFoodData(reason: 'delete');
       AppLogger.d('FoodViewModel', 'Food entry deleted successfully.');
     } catch (e, stack) {
       _errorMessage = 'Failed to delete food entry: $e';
@@ -250,5 +240,20 @@ class FoodViewModel extends ChangeNotifier with WidgetsBindingObserver {
       _isAutoFilling = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _refreshFoodData({required String reason}) async {
+    AppLogger.d(
+      'FoodViewModel',
+      'Fetching food data (reason=$reason date=${_todayString()})',
+    );
+    _dailyGoals = await _repository.getDailyGoals();
+    _dailyEntries = await _repository.getDailyFoodEntries();
+    _catalogEntries = await _repository.getFoodCatalogEntries();
+    _lastLoadedDate = _todayString();
+    AppLogger.d(
+      'FoodViewModel',
+      'Fetched ${_dailyEntries.length} entries and ${_catalogEntries.length} catalog items for $_lastLoadedDate',
+    );
   }
 }

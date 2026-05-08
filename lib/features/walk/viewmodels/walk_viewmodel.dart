@@ -6,9 +6,9 @@
 
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dragon/features/walk/models/day_steps.dart';
 import 'package:dragon/features/walk/models/step_goal.dart';
+import 'package:dragon/features/walk/repositories/walk_repository.dart';
 import 'package:dragon/shared/utils/app_logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -30,7 +30,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final WalkRepository _repository = WalkRepository();
 
   // ── State ────────────────────────────────────────────────────────────────
 
@@ -223,20 +223,11 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    try {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      final data = doc.data();
-      final remoteGoal = (data?['stepGoal'] as num?)?.toInt();
-      if (remoteGoal != null && remoteGoal > 0) {
-        _goal = StepGoal(targetSteps: remoteGoal);
-        await _prefs?.setInt(
-          _userKey(user.uid, 'step_goal'),
-          _goal.targetSteps,
-        );
-        return;
-      }
-    } catch (e, st) {
-      AppLogger.d('WalkGoal', 'Goal load failed', error: e, stackTrace: st);
+    final remoteGoal = await _repository.loadGoalFromFirestore();
+    if (remoteGoal != null && remoteGoal > 0) {
+      _goal = StepGoal(targetSteps: remoteGoal);
+      await _prefs?.setInt(_userKey(user.uid, 'step_goal'), _goal.targetSteps);
+      return;
     }
 
     _goal = StepGoal(
@@ -246,17 +237,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _saveGoalToFirestore() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    try {
-      await _firestore.collection('users').doc(user.uid).set({
-        ..._goal.toJson(),
-        'goalUpdatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e, st) {
-      AppLogger.d('WalkGoal', 'Goal save failed', error: e, stackTrace: st);
-    }
+    await _repository.saveGoal(_goal);
   }
 
   Future<void> _requestPermission() async {
@@ -374,65 +355,23 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _saveToFirestore() async {
-    final user = _auth.currentUser;
-    if (user == null) {
+    if (_auth.currentUser == null) {
       AppLogger.d('WalkFirestore', 'Skip save: no authenticated user');
       return;
     }
-
-    final docId = _todayString();
-    AppLogger.d(
-      'WalkFirestore',
-      'Saving steps=$_todaySteps goal=${_goal.targetSteps} '
-          'path=users/${user.uid}/steps/$docId',
+    final dateKey = _todayString();
+    await _repository.saveTodaySteps(
+      dateKey: dateKey,
+      steps: _todaySteps,
+      goal: _goal.targetSteps,
     );
-
-    try {
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('steps')
-          .doc(docId)
-          .set({
-            'steps': _todaySteps,
-            'goal': _goal.targetSteps,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-      _upsertTodayHistory();
-      AppLogger.d('WalkFirestore', 'Save complete');
-    } catch (e, st) {
-      AppLogger.d('WalkFirestore', 'Save failed', error: e, stackTrace: st);
-    }
+    _upsertTodayHistory();
   }
 
   Future<void> _loadTodayFromFirestore() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    final docId = _todayString();
-    AppLogger.d(
-      'WalkFirestore',
-      'Loading today path=users/${user.uid}/steps/$docId',
-    );
-
-    try {
-      final snap = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('steps')
-          .doc(docId)
-          .get();
-      final data = snap.data();
-      _todaySteps = (data?['steps'] as num?)?.toInt() ?? 0;
-    } catch (e, st) {
-      AppLogger.d(
-        'WalkFirestore',
-        'Today load failed',
-        error: e,
-        stackTrace: st,
-      );
-    }
-    _lastLoadedDate = _todayString();
+    final dateKey = _todayString();
+    _todaySteps = await _repository.loadTodaySteps(dateKey);
+    _lastLoadedDate = dateKey;
     AppLogger.d(
       'WalkFirestore',
       'Today loaded: steps=$_todaySteps goal=${_goal.targetSteps} date=$_lastLoadedDate',
@@ -440,38 +379,8 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _loadHistory() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      AppLogger.d('WalkFirestore', 'Skip load history: no authenticated user');
-      return;
-    }
-
-    AppLogger.d(
-      'WalkFirestore',
-      'Loading history path=users/${user.uid}/steps',
-    );
-
-    try {
-      // Document IDs are YYYY-MM-DD — descending alphabetical = newest first.
-      final snap = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('steps')
-          .orderBy(FieldPath.documentId, descending: true)
-          .get();
-
-      _history = snap.docs.map((doc) {
-        final data = doc.data();
-        return DaySteps(
-          date: doc.id,
-          steps: (data['steps'] as num?)?.toInt() ?? 0,
-          goal: (data['goal'] as num?)?.toInt() ?? _goal.targetSteps,
-        );
-      }).toList();
-      AppLogger.d('WalkFirestore', 'History loaded: count=${_history.length}');
-    } catch (e) {
-      AppLogger.d('WalkFirestore', 'History load failed', error: e);
-    }
+    _history = await _repository.loadHistory(_goal.targetSteps);
+    AppLogger.d('WalkFirestore', 'History loaded: count=${_history.length}');
   }
 
   void _logStepEvent(StepCount event, int delta) {

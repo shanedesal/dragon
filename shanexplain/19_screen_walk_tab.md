@@ -1,9 +1,9 @@
 # 19 — Walk Tab Screen
 
-> **File:** `lib/features/home/screens/walk_tab.dart`
+> **File:** `lib/features/walk/screens/walk_tab.dart`
 > **Category:** screen
 > **Added:** 2026-04-30
-> **Related files:** `walk_viewmodel.dart`, `day_steps.dart`, `main_shell.dart`, `18_viewmodel_walk.md`, `17_model_day_steps.md`, `13_shell_main.md`
+> **Related files:** `walk_viewmodel.dart`, `day_steps.dart`, `walk_repository.dart`, `main_shell.dart`, `18_viewmodel_walk.md`, `17_model_day_steps.md`, `13_shell_main.md`
 
 ---
 
@@ -131,13 +131,14 @@ final result = await showDialog<int>(
 
 if (result != null) {
   AppLogger.d('WalkUI', 'Goal dialog saved: $result');
-  await vm.setGoal(result);
+  // Read fresh from context after async gap — avoids stale constructor ref.
+  if (context.mounted) await context.read<WalkViewModel>().setGoal(result);
 } else {
   AppLogger.d('WalkUI', 'Goal dialog canceled');
 }
 ```
 
-**What this does:** `showDialog` is like a function call that returns a value — whatever the dialog "pops" with. If the user taps Save, `Navigator.of(ctx).pop(val)` closes the dialog AND passes the integer back as the return value of `showDialog`. If they tap Cancel, the dialog closes and returns `null`. The code after the `await` checks if `result` is non-null before calling `vm.setGoal()`. The `AppLogger` lines are debug-only breadcrumbs so you can see when the dialog opened and what the user picked.
+**What this does:** `showDialog` is like a function call that returns a value — whatever the dialog "pops" with. If the user taps Save, the dialog closes and passes the integer back. The code after the `await` checks if `result` is non-null. Crucially, it reads the `WalkViewModel` fresh from the **context** instead of relying on a variable from before the dialog opened. This is a safety rule in Flutter: if you wait for something (like a dialog), the world might have changed while you were waiting, so you should always get a fresh handle on your data!
 
 ---
 

@@ -1,3 +1,9 @@
+// ------------------------------------------------------------------
+// File: food_tab.dart
+// Feature: Food
+// Description: The Food tab — shows daily nutrition summary, macro
+//              breakdown, and a scrollable list of today's food entries.
+// ------------------------------------------------------------------
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -57,14 +63,13 @@ class FoodTab extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                             const SizedBox(height: 16),
-                            _buildSummaryCard(
-                              context,
-                              vm,
-                              calorieGoal,
-                              proteinGoal,
+                            _SummaryCard(
+                              vm: vm,
+                              calorieGoal: calorieGoal,
+                              proteinGoal: proteinGoal,
                             ),
                             const SizedBox(height: 20),
-                            _buildMacroCard(vm),
+                            _MacroCard(vm: vm),
                             const SizedBox(height: 28),
                             Text(
                               'Today\'s Entries',
@@ -134,10 +139,10 @@ class _EmptyFoodState extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(203, 166, 247, 0.12),
+                  color: CatppuccinMocha.mauve.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: const Color.fromRGBO(203, 166, 247, 0.2),
+                    color: CatppuccinMocha.mauve.withValues(alpha: 0.2),
                   ),
                 ),
                 child: const Icon(
@@ -175,105 +180,111 @@ class _EmptyFoodState extends StatelessWidget {
   }
 }
 
-Widget _buildSummaryCard(
-  BuildContext context,
-  FoodViewModel vm,
-  int calorieGoal,
-  int proteinGoal,
-) {
-  final calorieProgress = calorieGoal > 0
-      ? vm.totalCalories / calorieGoal
-      : 0.0;
-  final proteinProgress = proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
-  final caloriesRemaining = max(0, calorieGoal - vm.totalCalories);
-  final proteinRemaining = max(0, proteinGoal - vm.totalProtein);
-  final calorieColor = calorieProgress >= 1.0
-      ? CatppuccinMocha.red
-      : CatppuccinMocha.mauve;
+// ── Daily summary card ───────────────────────────────────────────────────────
 
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: CatppuccinMocha.surface0,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: CatppuccinMocha.surface1),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Daily Summary',
-              style: TextStyle(
-                color: CatppuccinMocha.text,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+class _SummaryCard extends StatelessWidget {
+  final FoodViewModel vm;
+  final int calorieGoal;
+  final int proteinGoal;
+
+  const _SummaryCard({
+    required this.vm,
+    required this.calorieGoal,
+    required this.proteinGoal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final calorieProgress = calorieGoal > 0 ? vm.totalCalories / calorieGoal : 0.0;
+    final proteinProgress = proteinGoal > 0 ? vm.totalProtein / proteinGoal : 0.0;
+    final caloriesRemaining = max(0, calorieGoal - vm.totalCalories);
+    final proteinRemaining = max(0, proteinGoal - vm.totalProtein);
+    final calorieColor = calorieProgress >= 1.0 ? CatppuccinMocha.red : CatppuccinMocha.mauve;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: CatppuccinMocha.surface0,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: CatppuccinMocha.surface1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Daily Summary',
+                style: TextStyle(
+                  color: CatppuccinMocha.text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit, color: CatppuccinMocha.subtext0),
-              onPressed: () => SetGoalsModal.show(context),
-              tooltip: 'Edit goals',
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${vm.totalCalories} kcal',
-          style: const TextStyle(
-            color: CatppuccinMocha.text,
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
+              IconButton(
+                icon: const Icon(Icons.edit, color: CatppuccinMocha.subtext0),
+                onPressed: () => SetGoalsModal.show(context),
+                tooltip: 'Edit goals',
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '$caloriesRemaining kcal remaining',
-          style: const TextStyle(color: CatppuccinMocha.subtext0, fontSize: 12),
-        ),
-        const SizedBox(height: 16),
-        _ProgressRow(
-          label: 'Calories',
-          current: vm.totalCalories,
-          goal: calorieGoal,
-          progress: calorieProgress,
-          color: calorieColor,
-          unit: 'kcal',
-        ),
-        const SizedBox(height: 12),
-        _ProgressRow(
-          label: 'Protein',
-          current: vm.totalProtein,
-          goal: proteinGoal,
-          progress: proteinProgress,
-          color: CatppuccinMocha.blue,
-          unit: 'g',
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Goal: $calorieGoal kcal',
-              style: const TextStyle(
-                color: CatppuccinMocha.subtext0,
-                fontSize: 12,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            '${vm.totalCalories} kcal',
+            style: const TextStyle(
+              color: CatppuccinMocha.text,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              '$proteinRemaining g protein remaining',
-              style: const TextStyle(
-                color: CatppuccinMocha.subtext0,
-                fontSize: 12,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$caloriesRemaining kcal remaining',
+            style: const TextStyle(color: CatppuccinMocha.subtext0, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          _ProgressRow(
+            label: 'Calories',
+            current: vm.totalCalories,
+            goal: calorieGoal,
+            progress: calorieProgress,
+            color: calorieColor,
+            unit: 'kcal',
+          ),
+          const SizedBox(height: 12),
+          _ProgressRow(
+            label: 'Protein',
+            current: vm.totalProtein,
+            goal: proteinGoal,
+            progress: proteinProgress,
+            color: CatppuccinMocha.blue,
+            unit: 'g',
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Goal: $calorieGoal kcal',
+                style: const TextStyle(
+                  color: CatppuccinMocha.subtext0,
+                  fontSize: 12,
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+              Text(
+                '$proteinRemaining g protein remaining',
+                style: const TextStyle(
+                  color: CatppuccinMocha.subtext0,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProgressRow extends StatelessWidget {
@@ -332,45 +343,53 @@ class _ProgressRow extends StatelessWidget {
   }
 }
 
-Widget _buildMacroCard(FoodViewModel vm) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: CatppuccinMocha.surface0,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: CatppuccinMocha.surface1),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: _MacroStat(
-            label: 'Protein',
-            value: '${vm.totalProtein} g',
-            icon: Icons.fitness_center,
-            color: CatppuccinMocha.blue,
+// ── Macro breakdown card ──────────────────────────────────────────────────────
+
+class _MacroCard extends StatelessWidget {
+  final FoodViewModel vm;
+  const _MacroCard({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CatppuccinMocha.surface0,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CatppuccinMocha.surface1),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _MacroStat(
+              label: 'Protein',
+              value: '${vm.totalProtein} g',
+              icon: Icons.fitness_center,
+              color: CatppuccinMocha.blue,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _MacroStat(
-            label: 'Carbs',
-            value: '${vm.totalCarbs} g',
-            icon: Icons.rice_bowl,
-            color: CatppuccinMocha.yellow,
+          const SizedBox(width: 12),
+          Expanded(
+            child: _MacroStat(
+              label: 'Carbs',
+              value: '${vm.totalCarbs} g',
+              icon: Icons.rice_bowl,
+              color: CatppuccinMocha.yellow,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _MacroStat(
-            label: 'Fat',
-            value: '${vm.totalFat} g',
-            icon: Icons.opacity,
-            color: CatppuccinMocha.peach,
+          const SizedBox(width: 12),
+          Expanded(
+            child: _MacroStat(
+              label: 'Fat',
+              value: '${vm.totalFat} g',
+              icon: Icons.opacity,
+              color: CatppuccinMocha.peach,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class _MacroStat extends StatelessWidget {
@@ -445,7 +464,7 @@ class _FoodEntryCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color.fromRGBO(203, 166, 247, 0.15),
+              color: CatppuccinMocha.mauve.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -519,6 +538,9 @@ class _FoodEntryCard extends StatelessWidget {
     );
   }
 
+  /// Returns a human-readable serving string for a food entry.
+  /// Legacy note: some old Firestore docs store unit as '1 serving' — the
+  /// `unit.startsWith('1 ')` guard prevents doubling like '2 1 serving'.
   String _formatServing(FoodEntry entry) {
     final unit = entry.unit.trim();
     if (unit.isEmpty) return '${entry.quantity} serving';

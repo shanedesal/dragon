@@ -44,14 +44,19 @@ lib/
 │   │   │       └── set_goals_modal.dart ← Bottom sheet for editing daily goals
 │   │   └── viewmodels/
 │   │       └── food_viewmodel.dart   ← The brain behind food goals and daily entries
-│   ├── home/                        ← Everything inside the home area after logging in
+│   ├── home/                        ← The default landing tab
+│   │   └── screens/
+│   │       └── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
+│   ├── walk/                        ← Everything related to step counting
 │   │   ├── models/
-│   │   │   └── day_steps.dart       ← Data container for one day's step count (date, steps, goal)
+│   │   │   ├── day_steps.dart       ← Data container for one day's step count (date, steps, goal)
+│   │   │   └── step_goal.dart       ← Domain model for the user's step goal
+│   │   ├── repositories/
+│   │   │   └── walk_repository.dart ← Centralized Firestore calls for step data and goals
 │   │   ├── screens/
-│   │   │   ├── home_tab.dart        ← The "Home" tab content (welcome card, dashboard)
 │   │   │   └── walk_tab.dart        ← The "Walk" tab: step ring, goal card, and history list
 │   │   └── viewmodels/
-│   │       └── walk_viewmodel.dart  ← The brain behind step counting, permission, and Firestore sync
+│   │       └── walk_viewmodel.dart  ← The brain behind step counting, permission, and timing logic
 │   ├── profile/                     ← The user's profile page
 │   │   └── screens/
 │   │       └── profile_screen.dart  ← Full-page profile screen (avatar + email)

@@ -108,7 +108,11 @@ class _ProfileAvatarButton extends StatelessWidget {
     final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
     return IconButton(
       onPressed: () => Scaffold.of(context).openDrawer(),
-      icon: CircleAvatar(radius: 14, child: Text(initial)),
+      icon: CircleAvatar(
+        radius: 14,
+        backgroundColor: CatppuccinMocha.mauve.withValues(alpha: 0.2),
+        child: Text(initial),
+      ),
     );
   }
 }

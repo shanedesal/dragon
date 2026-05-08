@@ -430,7 +430,8 @@ class _GoalCard extends StatelessWidget {
 
     if (result != null) {
       AppLogger.d('WalkUI', 'Goal dialog saved: $result');
-      await vm.setGoal(result);
+      // Read fresh from context after async gap — avoids stale constructor ref.
+      if (context.mounted) await context.read<WalkViewModel>().setGoal(result);
     } else {
       AppLogger.d('WalkUI', 'Goal dialog canceled');
     }
