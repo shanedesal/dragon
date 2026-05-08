@@ -159,7 +159,9 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       AppLogger.d('Walk', 'App resumed, refreshing today');
       _needsImmediateSave = true;
       () async {
+        if (_lastLoadedDate.isEmpty) return; // Still initializing
         await _loadUserGoal();
+        await _saveToFirestore(); // Save local steps to history before loading fresh from firestore
         await _loadTodayFromFirestore();
         _scheduleMidnightRollover();
         notifyListeners();
@@ -290,6 +292,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
         'Walk',
         'Day changed in step stream: $_lastLoadedDate -> $today',
       );
+      await _saveToFirestore(); // Save final steps for yesterday
       await _loadTodayFromFirestore();
       _lastLoadedDate = today;
       _needsImmediateSave = true;
@@ -359,7 +362,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
       AppLogger.d('WalkFirestore', 'Skip save: no authenticated user');
       return;
     }
-    final dateKey = _todayString();
+    final dateKey = _lastLoadedDate.isNotEmpty ? _lastLoadedDate : _todayString();
     await _repository.saveTodaySteps(
       dateKey: dateKey,
       steps: _todaySteps,
@@ -456,6 +459,7 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     AppLogger.d('Walk', 'Midnight rollover start: $_lastLoadedDate -> $today');
+    await _saveToFirestore(); // Save yesterday's final step count
     await _loadTodayFromFirestore();
     _lastLoadedDate = today;
     _needsImmediateSave = true;
@@ -476,14 +480,14 @@ class WalkViewModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _upsertTodayHistory() {
-    final today = _todayString();
+    final dateKey = _lastLoadedDate.isNotEmpty ? _lastLoadedDate : _todayString();
     final updated = DaySteps(
-      date: today,
+      date: dateKey,
       steps: _todaySteps,
       goal: _goal.targetSteps,
     );
 
-    final index = _history.indexWhere((day) => day.date == today);
+    final index = _history.indexWhere((day) => day.date == dateKey);
     if (index == -1) {
       _history = [updated, ..._history];
     } else {
